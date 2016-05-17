@@ -1,4 +1,41 @@
 <?PHP
+function aprint($val, $txt = null) {
+	echo '<code style="text-align: left; font-size: 8pt;"><pre>';
+	if($txt != null) echo '<b>' . $txt . ':</b> ';
+	print_r($val);
+	echo '</pre></code><br><hr>';
+}
+
+	function getKampfSimuLinksForTarget($rg, $rp, $linkName) {
+		$sql = 'SELECT 
+				angreifer_galaxie g, 
+				angreifer_planet p, 
+				flugzeit, 
+				flottennr,
+				floor((ankunft - (SELECT MIN(ankunft) FROM gn4flottenbewegungen WHERE ankunft > UNIX_TIMESTAMP(NOW()) AND (verteidiger_galaxie = "'.$rg.'" and verteidiger_planet = "'.$rp.'") AND modus IN (1, 2))) / (15*60)) as tick,
+				IF(modus = 1, "a", "d") typ
+			FROM gn4flottenbewegungen
+			WHERE ankunft > UNIX_TIMESTAMP(NOW()) AND (verteidiger_galaxie = "'.$rg.'" and verteidiger_planet = "'.$rp.'") AND modus IN (1, 2)';
+//echo $sql;
+		$res = tic_mysql_query($sql) or die(tic_mysql_error(__FILE__,__LINE__));
+		$num = mysql_num_rows($res);
+
+		$link = '';
+		$ticks = 0;
+		for($i = 0; $i < $num; $i++) {
+			$f = mysql_result($res, $i, "flottennr");
+			$g = mysql_result($res, $i, "g");
+			$p = mysql_result($res, $i, "p");
+			$typ = mysql_result($res, $i, "typ");
+			$ankunft = mysql_result($res, $i, "tick") + 1;
+			$dauer = mysql_result($res, $i, "flugzeit");
+			$link .= '&g['.($i+1).']='.$g.'&p['.($i+1).']='.$p.'&typ['.($i+1).']='.$typ.'&f['.($i+1).']='.$f.'&ankunft['.($i+1).']='.$ankunft.'&aufenthalt['.($i+1).']='.$dauer;
+			
+			$ticks = ($typ == 'a' && ($ankunft + $dauer > $ticks)) ? $ankunft + $dauer -1 : $ticks;
+		}
+
+		return '<a href="main.php?modul=kampf&referenz=eintragen&compute=Berechnen&preticks=1&ticks='.$ticks.'&num_flotten='.$num.'&g[0]='.$rg.'&p[0]='.$rp.$link.'#oben">'.$linkName.'</a>';;
+	}
     function GetScans($SQL_DBConn, $galaxie, $planet) {
         $scan_type[0] = 'S';
         $scan_type[1] = 'E';
@@ -188,9 +225,9 @@ function GetUserInfos($id) {
     {
         if ($name != "" && is_numeric($planet) && $planet != '' && is_numeric($gala)&& $gala != '')
         {
-            tic_mysql_query("DELETE FROM gn4gnuser WHERE name='".$name."'") or die(tic_mysql_error(__FILE__,__LINE__));
-            tic_mysql_query("DELETE FROM gn4gnuser WHERE gala='".$gala."' AND planet='".$planet."'") or die(tic_mysql_error(__FILE__,__LINE__));
-            tic_mysql_query("INSERT INTO gn4gnuser (gala, planet, name, kommentare, erfasst) VALUES ('".$gala."', '".$planet."', '".$name."', '".$kommentare."', '".time()."')") or die(tic_mysql_error(__FILE__,__LINE__));
+//            tic_mysql_query("DELETE FROM gn4gnuser WHERE name='".$name."'") or die(tic_mysql_error(__FILE__,__LINE__));
+//            tic_mysql_query("DELETE FROM gn4gnuser WHERE gala='".$gala."' AND planet='".$planet."'") or die(tic_mysql_error(__FILE__,__LINE__));
+//            tic_mysql_query("INSERT INTO gn4gnuser (gala, planet, name, kommentare, erfasst) VALUES ('".$gala."', '".$planet."', '".$name."', '".$kommentare."', '".time()."')") or die(tic_mysql_error(__FILE__,__LINE__));
         }
     }
 
@@ -277,7 +314,7 @@ function GetUserInfos($id) {
 
     include './globalvars2.php';
 
-    $SQL = "SELECT * FROM gn4scans WHERE rg=".$galaxie." and rp=".$planet." order by type;";
+    $SQL = "SELECT * FROM gn4scans WHERE rg=".$galaxie." and rp=".$planet." order by type ASC, id DESC;";
     $SQL_Result = tic_mysql_query($SQL) or die(tic_mysql_error(__FILE__,__LINE__));
     $SQL_Num = mysql_num_rows($SQL_Result);
     for ($i=0;$i<15;$i++) {
@@ -290,7 +327,12 @@ function GetUserInfos($id) {
     $gzeit="";
     $ggen ="";
 
+	//blocks
+	$sql = "SELECT t, svs, typ FROM gn4scanblock WHERE g='".$galaxie."' AND p='".$planet."' ORDER BY t DESC";
+	$res = tic_mysql_query($sql, $SQL_DBConn);
+	$num = mysql_num_rows($res);
 
+	//iterate others
     for ($i = 0; $i < $SQL_Num; $i++) {
          $type = mysql_result($SQL_Result, $i, 'type' );
          if ($punkte >= 0) {
@@ -391,6 +433,36 @@ function GetUserInfos($id) {
    }
 
    $output = "";
+   
+   //blocks
+   if($num > 0) {
+		$output .= '<b>Scanblocks:</b><br/>';
+	for ($k = 0; $k < $num; $k++) {
+		$typ;
+		switch(mysql_result($res, $k, 'typ')) {
+			case 0:
+				$typ = 'Sektor'; break;
+			case 1:
+				$typ = 'Einheiten'; break;
+			case 2:
+				$typ = 'Milit&auml;r'; break;
+			case 3:
+				$typ = 'Gesch&uuml;tze'; break;
+			case 4:
+				$typ = 'Nachrichten'; break;
+			default:
+				$typ = '<i>unknown</i>'; break;
+		}
+
+		$entry = array(
+			'svs' => mysql_result($res, $k, 'svs'),
+			't' => mysql_result($res, $k, 't'),
+			'typ' => $typ
+			);
+		$output .= $entry['svs'] . ' SVS, ' . $entry['typ'] . ' (' . date('H:i d.m.Y', $entry['t']) . ')<br/>';
+	}
+   }
+   
    if  ($xzeit[0] != '?') {
      $output .= $xzeit[0];
      for ($i=0; $i<5; $i++) {

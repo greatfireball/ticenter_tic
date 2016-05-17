@@ -1,14 +1,36 @@
 <!-- START: inc_accountinfo -->
 <table width="100%" cellspacing="6" border="0" cellpadding="1" style="border:1px #000000 solid;background-color:#ffffff;">
 	<colgroup>
-		<col width="85%" />
-		<col width="15%" />
+		<col width="100"/>
+		<col/>
+		<col width="250" />
 	</colgroup>
 	<tr>
+		<td rowspan="2" align=left" valign="middle" style="width: 150px">
+			<form action="main.php" method="get">
+				<input type="hidden" name="modul" value="showgalascans" />
+				<b>Scanabruf:</b><br/>
+				<input type="text" name="xgala" style="width: 40px" />:<input type="text" name="xplanet" style="width: 40px" onchange="javascript:document.getElementById('myselect').selectedIndex=1;"/><br/>
+				<select size="1" name="displaytype" id="myselect">
+					<option selected="selected" value="1">Galaxie</option>
+					<option value="0">Planet</option>
+				</select>
+				<input type="submit" value="go!"/>
+			</form>
+		</td>
 		<td valign="middle" rowspan="2" align="center">
 <?php
 	include( "./inc_summary.php" );
 ?>
+		</td>
+		<td rowspan="2" align=left" valign="middle" style="width: 150px">
+			<form action="main.php" method="post">
+				<input type="hidden" name="modul2" value="scan" />
+				<input type="hidden" name="action" value="addscan" />
+				<b>Scanimport:</b><br/>
+				<textarea type="text" name="txtScan" style="width: 200px; height: 40px"></textarea><br/>
+				<a href="main.php?modul=<?=$_GET['modul'];?>&mode=<?=$_GET['mode'];?>&action=updatefleett" onclick="return confirm('Dies aktualisiert den Zeitstempel des letzten Taktikscreen Imports f&uuml;r Galaxie <?=$Benutzer['galaxie'];?>.\n\nBist Du Dir sicher, dass sich nichts ge&auml;ndert hat?')">&raquo; Flottenbewegungen gleich</a> <input type="submit" value="go!"/>
+			</form>
 		</td>
 		<td align="right" valign="top" style="white-space:nowrap;">
 			<font size="-1">
@@ -54,7 +76,7 @@
 //-->
 </script>
 <?
-	if (@$MetaInfo['sysmsg'] !="") {
+	if (strlen($MetaInfo['sysmsg']) > 0) {
 		echo "<br /><div class=\"sysmessage\">\n";
 		echo nl2br(htmlentities($MetaInfo['sysmsg'] ))."\n";
 		echo "</div>\n";

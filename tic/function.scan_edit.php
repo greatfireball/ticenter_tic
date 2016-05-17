@@ -1,5 +1,24 @@
 <?php
 
+function block_write_to_db() {
+	global $SQL_DBConn, $Benutzer;
+    $trg = $_POST['galakoord'];
+    $trp= $_POST['planetkoord'];
+    $ttype = $_POST['blocktype'];
+    $svs = $_POST['svs'] ? '"' . $_POST['svs'] . '"' : "NULL";
+    $sg = $_POST['sg'] ? $_POST['sg'] : $Benutzer['galaxie'];
+    $sp = $_POST['sp'] ? $_POST['sp'] : $Benutzer['name'];
+    $svs = str_replace('.', '', $svs);
+
+	$suspicious = ($svs == "NULL") ? '1' : 'NULL';
+    
+    $sql = 'INSERT INTO `gn4scanblock` (g, p, t, svs, sg, sp, sname, typ, suspicious) VALUES ("'.$trg.'", "'.$trp.'", UNIX_TIMESTAMP(NOW()), ' . $svs . ', "'.$sg.'", "'.$sp.'", "'.$Benutzer['name'].'", "'.$ttype.'", '.$suspicious.');';
+	//aprint($sql);
+	
+    $SQL_Result = tic_mysql_query($sql, $SQL_DBConn) or die('ERROR 2 Konnte Datensatz nicht schreiben');
+
+}
+
 function sek_write_to_db() {
 	global $SQL_DBConn, $Benutzer;
 

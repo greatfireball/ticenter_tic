@@ -30,7 +30,7 @@
 		} else {
 			$_SESSION['is_auth'] = 0;
 			$_SESSION['userid'] = -1;
-			die("Ihre Anmeldedaten waren nicht korrekt!");
+			die("Ihre Anmeldedaten waren nicht korrekt!<br/><a href='./' target='_self'>Zum Login</a>");
 		}
 	}
 
@@ -41,7 +41,7 @@
 	$mtime = $mtime[1] + $mtime[0];
 	$start_time = $mtime;
 
-	$version = "1.36.3";
+	$version = "1.45.0dev";
 
 	include("./accdata.php");
 	include("./globalvars.php");
@@ -211,7 +211,7 @@
 	</head>
 	<body>
 		<div id="overDiv" style="position:absolute; visibility:hidden; z-index:1000;"></div>
-		<div style="position:absolute; z-index:10;background-image:url('bilder/skin/background.bmp');width:100%">
+		<div style="position:absolute; z-index:10;width:100%">
 		<!-- <div align="center" style="width:100%"><img src="bilder/skin/banner.jpg" alt="" align="middle" /></div> --> <!-- Banner -->
 <?php
 	include("./menu.inc.php");
@@ -233,9 +233,9 @@
 		if (isset($_GET['auto']))
 			echo "Auto-Refresh...";
 		echo "<div class=\"main\" align=\"center\">";
-		if ($Benutzer['pwdandern'] != 1)
+		if ($Benutzer['pwdandern'] != 1) {
 			include("./inc_".$modul.".php");
-		else
+		} else
 			include("./inc_pwdandern.php");
 
 		if ($error_code != 0)
@@ -245,10 +245,10 @@
 		<div style="position:relative; width:100%; margin-top:10px;">
 			<hr />
 			<table width="100%"><tr>
-				<td align="left" valign="top">
-					<font size="-1">T.I.C. v<?=$version?></font><br />
-					<a href="http://www.galaxy-network.de/game/login.php" target="_blank"><img style="border:0px" src="http://www.galaxy-network.de/banner_images/gn-button.gif" alt="Galax-Network" /></a>
+				<td align="left" valign="top" style="font-size: 6pt; text-align: right">
+					<a href="https://github.com/tuedelue/ticenter_tic" style="color: #555555;" target="_blank">T.I.C. v<?=$version?></a>
 				</td>
+<!--
 				<td align="center" style="white-space:nowrap;">
 					erstellt in
 <?php
@@ -256,18 +256,16 @@
 	$mtime = explode(" ", $mtime);
 	$mtime = $mtime[1] + $mtime[0];
 	$end_time = $mtime;
-	echo sprintf("%01.3f", $end_time - $start_time)." sek.";
+	echo sprintf("%01.3f", $end_time - $start_time)."s";
 	if (isset($mid_time) && $mid_time != 0)
 	{
-		echo " (".sprintf("%01.3f", $mid_time - $start_time)." sek.)<br />\n";
+		echo " (".sprintf("%01.3f", $mid_time - $start_time)."s)\n";
 	}
 	echo "<br />".count_querys(false)." Datenbankabfragen\n";
 ?>
 				</td>
-				<td align="right" valign="top">
-					<a href="irc://irc.quakenet.org/tic-progger" target="_blank"><img style="border:0px" src="./bilder/TICELogo.jpg" alt="Tic-Entwickler" /></a>
-				</td>
 			</tr></table>
+//-->
 		</div></div></div></div>
 <?
 	if ($_REQUEST['autoclose'] == "now") {

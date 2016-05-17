@@ -1,4 +1,5 @@
 <?PHP
+//this script by far uses too much memory!
 class bewegung {
 	var $ag, $ap, $vg, $vp, $modus, $safe, $eta, $flottennr, $erfasser, $erfasst_am, $aname, $vname;
 };
@@ -255,6 +256,8 @@ function parseLine( $line_in) {
 					} while (($break == false) && ($break_it < 25)); // 5
 
 	// Erstellen der einzelnen Flottenbewegungen
+					include("function.updatefleett.php");
+	
 					$this_galaxy = 0;
 					for ($i = 0; $i < sizeof($taktik); $i++) { // 5
 						if ($taktik[$i][0] == "Sektor-Kommandant") continue;
@@ -393,6 +396,7 @@ function parseLine( $line_in) {
 							$flottenbewegungen[$ii]["mod"] = 1;
 							$flottenbewegungen[$ii]["fleet"] = mysql_result($SQL_Result, $i, 'flottennr');
 							$flottenbewegungen[$ii]["safe"] = 1 - mysql_result($SQL_Result, $i, 'save');
+							$flottenbewegungen[$ii]["reported_to_slack"] = mysql_result($SQL_Result, $i, 'reported_to_slack');
 							break;
 						} // 6
 					} // 5
@@ -427,6 +431,7 @@ function parseLine( $line_in) {
 					$txt_Verteidiger_Planet		= $flottenbewegungen[$i]["ziel_planet"];
 					$txt_Verteidiger_Name		= $flottenbewegungen[$i]["ziel_name"];
 					$txt_not_safe			= 1 - $flottenbewegungen[$i]["safe"];
+					$txt_reported_to_slack = $flottenbewegungen[$i]["reported_to_slack"];
 					$lst_ETA			= $flottenbewegungen[$i]["eta"];
 					$lst_Flotte			= $flottenbewegungen[$i]["fleet"];
 					$modus				= $flottenbewegungen[$i]["modus"];
@@ -734,7 +739,7 @@ function parseLine( $line_in) {
                 } // 4
             } else {    // sec, mili, unit, news, gscan // 3
                 $scan_gen = trim($daten[count($daten) - 1]);
-		$scan_gen = preg_replace('/[^0-9]/', '', $scan_gen);
+				$scan_gen = preg_replace('/[^0-9]/', '', $scan_gen);
                 $daten = parseLine( $zeilen[1]);            // Name: FedEx
                 $scan_rn = trim($daten[1]);
                 $daten = parseLine( $zeilen[2]);            // Koordinaten: 233:20
@@ -960,7 +965,124 @@ function parseLine( $line_in) {
                 $insert_names = 'glo, glr, gmr, gsr, ga';
                 $insert_values = '"'.$scan_glo.'", "'.$scan_glr.'", "'.$scan_gmr.'", "'.$scan_gsr.'", "'.$scan_ga.'"';
                 $SQL_Result = tic_mysql_query('INSERT INTO `gn4scans` (type, zeit, g, p, rg, rp, gen, '.$insert_names.') VALUES ("'.$scan_type.'", "'.date("H:i d.m.Y").'", "'.$Benutzer['galaxie'].'", "'.$Benutzer['planet'].'", "'.$scan_rg.'", "'.$scan_rp.'", "'.$scan_gen.'", '.$insert_values.');', $SQL_DBConn) or die('ERROR 2 Konnte Datensatz nicht schreiben');
-            } // 2
+            } // 2 scantyp geschütze
+
+			//aprint($zeilen);
+			if(strpos($zeilen[0], 'Scan Block') !== false) {
+				$datestr = substr(trim($zeilen[0]), 15, 34);
+				$tmp = explode(' ', trim($zeilen[1]));
+				$koords = explode(':', $tmp[0]);
+				$typ = $tmp[4];
+
+				/*
+				aprint(array(
+					'tstr' => $datestr,
+					'koords' => $koords,
+					'vs' => array($Benutzer['galaxie'], $Benutzer['planet']),
+					'typ' => $typ
+				));
+				*/
+				
+				if(strpos($typ, "Sektor") !== false) {
+					$typ = 0;
+				} else if(strpos($typ, "Einheiten") !== false) {
+					$typ = 1;
+				} else if(strpos($typ, "Milit") !== false) {
+					$typ = 2;
+				} else if(strpos($typ, "tz") !== false) {
+					$typ = 3;
+				} else if(strpos($typ, "Nachrichten") !== false) {
+					$typ = 4;
+				}else {
+					$typ = -1;
+				}
+				
+				$sql = 'INSERT INTO `gn4scanblock` (
+						g, p, t, svs, sg, sp, sname, typ, suspicious
+					) SELECT 
+						"'.$Benutzer['galaxie'].'", "'.$Benutzer['planet'].'", UNIX_TIMESTAMP(STR_TO_DATE("'.$datestr.'","%d. %m %Y - %H %i")), NULL, "'.$koords[0].'", "'.$koords[1].'", "'.$Benutzer['name'].'", '.$typ.', 1
+					FROM DUAL
+					WHERE NOT EXISTS (
+						SELECT * FROM gn4scanblock WHERE g = "'.$Benutzer['galaxie'].'" AND p = "'.$Benutzer['planet'].'" AND sg = "'.$koords[0].'" AND sp = "'.$koords[1].'" AND t = UNIX_TIMESTAMP(STR_TO_DATE("'.$datestr.'","%d. %m %Y - %H %i")) AND typ = "'.$typ.'") LIMIT 1;';
+
+				//aprint($sql);
+
+				tic_mysql_query($sql) or tic_mysql_error(__FILE__, __LINE__);
+				
+			}
+			
+			if($scan_typ == 'Newsscan') {
+				unset($text_in);
+				function aprint($var) {
+					echo '<pre></code>';
+					print_r($var);
+					echo '</code></pre>';
+				}
+
+				//prepare data
+				$to_insert = array(	'erfasser_name'	=> $Benutzer['name'],
+							'erfasser_g' 	=> $Benutzer['galaxie'],
+							'erfasser_p' 	=> $Benutzer['planet'],
+							'erfasser_svs' 	=> $Benutzer['svs'],
+							'ziel_g' 	=> $scan_rg,
+							'ziel_p' 	=> $scan_rp,
+							'entries'	=> array());
+
+				$datum = NULL;
+				$titel = NULL;
+				$inhalt = NULL;
+				$quit = false;
+				for($i = 0; $i < count($zeilen); $i++) {
+					if($zeilen[$i]{0} == '[') {	
+						//store last one
+						if($titel) {
+							$to_insert['entries'][] = array('datum' => $datum,
+											'titel' => $titel,
+											'inhalt' => trim($inhalt));
+						}
+
+						//[21/04-2016 08:30:13]
+						$tmp = explode(']', $zeilen[$i]);
+						$datum = trim($tmp[0] . ']');
+						$titel = trim($tmp[1]);
+						$inhalt = '';
+					} else if(trim($zeilen[$i]) != 'ENDE') {
+						$inhalt .= $zeilen[$i];
+					} else {
+						$quit = true;
+					}
+				}//for
+				
+				//aprint($to_insert);
+
+				//insert into mysql
+				$sql = "INSERT INTO `gn`.`gn4scans_news` (`id`, `t`, `ziel_g`, `ziel_p`, `erfasser_g`, `erfasser_p`, `erfasser_name`, `erfasser_svs`, `genauigkeit`) 
+						VALUES (NULL, 
+							UNIX_TIMESTAMP(NOW()), 
+							'" . mysql_real_escape_string($to_insert['ziel_g']) . "', 
+							'" . mysql_real_escape_string($to_insert['ziel_p']) . "', 
+							'" . mysql_real_escape_string($to_insert['erfasser_g']) . "', 
+							'" . mysql_real_escape_string($to_insert['erfasser_p']) . "', 
+							'" . mysql_real_escape_string($to_insert['erfasser_name']) . "', 
+							'" . mysql_real_escape_string($to_insert['erfasser_svs']) . "',
+							'" . mysql_real_escape_string($scan_gen) . "');";
+				//aprint($sql);
+				$success = tic_mysql_query($sql, $SQL_DBConn);
+				$id = mysql_insert_id($SQL_DBConn);
+				//aprint($id);
+				if($success) {
+					foreach($to_insert['entries'] as $value) {
+						$sql = "INSERT INTO `gn`.`gn4scans_news_entries` (`id`, `news_id`, `t`, `typ`, `inhalt`) 
+							VALUES (NULL, 
+								'" . $id . "', 
+								str_to_date('" .$value['datum'] . "', '%d/%m-%Y %H:%i:%s'), 
+								'" . mysql_real_escape_string($value['titel']) . "', 
+								'" . mysql_real_escape_string($value['inhalt']) . "')";
+						tic_mysql_query($sql, $SQL_DBConn);
+					}
+				}
+			}//scantyp NEWS		
+
             CountScans($Benutzer['id']);
             $modul = 'scans';
             $txtScanGalaxie = $scan_rg;

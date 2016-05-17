@@ -25,6 +25,9 @@
 			<tr>
 				<td class="menu"><a href="./main.php?modul=taktikbildschirm&amp;mode=5"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Galaxie <?=$Benutzer['galaxie']?></a></td>
 			</tr>
+			<tr>
+				<td class="menu"><a href="./main.php?modul=statistikmod"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Statistiken</a></td>
+			</tr>
 		</table>
 	</td></tr>
 	<tr>
@@ -36,22 +39,26 @@
 	<tr><td>
 		<table cellspacing="1" style="width:100%;background:#000000;">
 			<tr>
-				<td class="menu"><a href="./main.php?modul=NWshow"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Nachtwache</a></td>
-			</tr>
-			<tr>
 				<td class="menu"><a href="./main.php?modul=scans"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Scan-Erfassen</a></td>
 			</tr>
+			<!--
 			<tr>
 				<td class="menu"><a href="./main.php?modul=ircpaste"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />IRC-Paste</a></td>
 			</tr>
+			//-->
 			<tr>
-				<td class="menu"><a href="./main.php?modul=showgalascans&amp;displaytype=0&amp;xgala=<?=$Benutzer['galaxie']?>&amp;xplanet=<?=$Benutzer['planet']?>"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Scans-Anzeige</a></td>
+				<td class="menu"><a href="./main.php?modul=showgalascans&amp;displaytype=0&amp;xgala=<?=$Benutzer['galaxie']?>&amp;xplanet=<?=$Benutzer['planet']?>"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Scan-Datenbank</a></td>
 			</tr>
+			<!--
 			<tr>
 				<td class="menu"><a href="./main.php?modul=forum&amp;faction=show&amp;falli=0&amp;ftopic=0"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Forum</a></td>
 			</tr>
+			//-->
 			<tr>
-				<td class="menu"><a href="./main.php?modul=profil"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Profil</a></td>
+				<td class="menu"><a href="./main.php"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Nachrichten</a></td>
+			</tr>
+			<tr>
+				<td class="menu"><a href="./main.php?modul=profil"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Mein Profil</a></td>
 			</tr>
 			<tr>
 
@@ -62,6 +69,9 @@
 	$attanzahl = AttAnzahl($Benutzer['allianz'],$Benutzer['ticid'],1);
 	echo '<font color="#'.$ATTSTATUSHTML[5].'">'.$attanzahl.'</font>)</a></td>';
 ?>
+			</tr>
+			<tr>
+				<td class="menu"><a href="./main.php?modul=NWshow"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Nachtwache</a></td>
 			</tr>
 			<tr>
 				<td class="menu"><a href="help/help.html" target="tic-hilfe"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Hilfe</a></td>
@@ -84,13 +94,15 @@
 		echo "			<tr>\n";
 		echo "				<td class=\"menu\"><a href=\"./main.php?modul=management_meta\"><img src=\"bilder/skin/menu_item_icon.bmp\" alt=\"\" style=\"padding:0px 5px 0px 5px;\" />Meta-Management</a></td>\n";
 		echo "			</tr>\n";
+		/*
 		if ($Benutzer['rang'] >= $Rang_Techniker) {
 			echo "			<tr>\n";
 			echo "				<td class=\"menu\"><a href=\"./main.php?modul=management_channels\"><img src=\"bilder/skin/menu_item_icon.bmp\" alt=\"\" style=\"padding:0px 5px 0px 5px;\" />Channel-Management</a></td>\n";
 			echo "			</tr>\n";
 		}
+		*/
 		echo "			<tr>\n";
-		echo "				<td class=\"menu\"><a href=\"./main.php?modul=userman\"><img src=\"bilder/skin/menu_item_icon.bmp\" alt=\"\" style=\"padding:0px 5px 0px 5px;\" />Benutzerverw.</a></td>\n";
+		echo "				<td class=\"menu\"><a href=\"./main.php?modul=userman\"><img src=\"bilder/skin/menu_item_icon.bmp\" alt=\"\" style=\"padding:0px 5px 0px 5px;\" />Benutzerverwaltung</a></td>\n";
 		echo "			</tr>\n";
 		if ($Benutzer['rang'] > $Rang_GC) {
 			echo "			<tr>\n";
@@ -115,13 +127,13 @@
 	<tr><td>
 		<table cellspacing="1" style="width:100%;background:#000000;">
 			<tr>
-				<td class="menu"><a href="./main.php?modul=vag-rechner"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Vag-Rechner</a></td>
-			</tr>
-			<tr>
 				<td class="menu"><a href="./main.php?modul=kampf"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Kampf-Simu</a></td>
 			</tr>
 			<tr>
-				<td class="menu"><a href="./main.php?modul=statistic"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Statistic</a></td>
+				<td class="menu"><a href="./main.php?modul=vag-rechner"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Vag-Rechner</a></td>
+			</tr>
+			<tr>
+				<td class="menu"><a href="./main.php?modul=statistic"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />TIC Statistik</a></td>
 			</tr>
 			<tr>
 				<td class="menu"><a href="./main.php?modul=listen"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Listen</a></td>
@@ -134,6 +146,48 @@
 			</tr>
 		</table>
 	</td></tr>
+<?php
+if ($Benutzer['rang'] >= $Rang_GC) {
+?>
+	<tr>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td class="menutop">Eingefangene Scanblocks</td>
+	</tr>
+<?php
+	$time_h = 36;
+	$sql = "SELECT s.allianz_name, COUNT(*) blocks
+FROM gn4scanblock sb
+LEFT JOIN gn_spieler2 s ON s.spieler_galaxie = sb.sg
+AND s.spieler_planet = sb.sp
+WHERE sb.suspicious = 1 AND sb.t > UNIX_TIMESTAMP(NOW()) - (".$time_h."*60*60)
+GROUP BY s.allianz_name
+ORDER BY s.allianz_name";
+	$res = tic_mysql_query($sql);
+	$num = mysql_num_rows($res);
+	
+	echo '<td><table title="Anzahl erfafasster Scanblocks der letzten '.$time_h.'h." cellspacing="1" style="width:100%;background:#000000;">';
+	if($num > 0) {
+		for($i = 0; $i < $num; $i++) {
+			/*$t = mysql_result($res, $i, 't');
+			$g = mysql_result($res, $i, 'g');
+			$p = mysql_result($res, $i, 'p');
+			$sg = mysql_result($res, $i, 'sg');
+			$sp = mysql_result($res, $i, 'sp');
+			$typ = mysql_result($res, $i, 'typ');
+			
+			echo '<tr><td>'.date('Y-m-d H:i', $t).'</td><td>'.$sg.':'.$sp.'</td><td>'.$g.':'.$p.'</td><td>'.$typ.'</td></tr>';*/
+			$ally = mysql_result($res, $i, 'allianz_name');
+			$blocks = mysql_result($res, $i, 'blocks');
+			
+			echo '<tr><td bgcolor="#aaaaaa">'.$ally.'</td><td bgcolor="#aaaaaa" align="right">&nbsp;'.$blocks.'&nbsp;</td></tr>';
+		}
+	}
+	echo '<tr><td class="menu" colspan="2"><a href="main.php?modul=scanblocks"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Details</a></td></tr>';
+	echo '</table><td>';
+}
+?>
 </table>
 </div>
 <!-- END: menu.inc.php -->

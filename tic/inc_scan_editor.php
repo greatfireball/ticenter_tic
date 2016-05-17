@@ -1,5 +1,57 @@
 <?php
 
+function block_edit() {
+	global $Benutzer, $SQL_DBConn;
+
+	$sql = "SELECT id FROM gn4accounts WHERE galaxie = '".mysql_real_escape_string($_POST['galakoord'])."' AND planet = '".mysql_real_escape_string($_POST['planetkoord'])."'";
+	//aprint($sql);
+	$res = tic_mysql_query($sql) or tic_mysql_error(__FILE__, __LINE__);
+	$num = mysql_num_rows($res);
+	?>
+<form name="form1" method="post" action="./main.php?modul=scans">
+<input type="hidden" name="action" value="scan_edit" />
+<input type="hidden" name="galakoord" value="<?=$_POST['galakoord']?>" />
+<input type="hidden" name="planetkoord" value="<?=$_POST['planetkoord']?>" />
+<input type="hidden" name="scanart" value="block">
+<table align="center">
+    <tr>
+      <td class="datatablehead" colspan="2">Scanblock (<?echo $_POST['galakoord'].':'.$_POST['planetkoord']; ?>)</td>
+    </tr>
+<?php
+	if($num == 0) {
+?>
+    <tr class="fieldnormaldark">
+      <td align="left">SVS:</td><td><input type="text" name="svs" value="<?=ZahlZuText($Benutzer['svs']);?>" style="width: 150px; text-align: right;" /></td>
+    </tr>
+<?php
+	} else {
+?>
+    <tr class="fieldnormaldark">
+      <td align="left">Gegenerischer Scanner:</td><td><input type="text" name="sg" style="width: 70px;"/>:<input type="text" name="sp" style="width: 70px;" /></td>
+    </tr>
+<?php
+	}
+?>
+    <tr class="fieldnormallight">
+      <td align="left">Typ:</td>
+      <td>
+        <select name="blocktype" size="5" style="width: 150px">
+	  <option value="0" selected="selected">Sektor</option>
+	  <option value="1">Einheiten</option>
+	  <option value="2">Milit&auml;r</option>
+	  <option value="3">Gesch&uuml;tze</option>
+	  <option value="4">Nachrichten</option>
+	</select>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" class="datatablefoot"><input type="submit" name="Abschicken" value="&Auml;nderungen speichern"  /></td>
+    </tr>
+  </table>
+</form>
+<?
+}
+
 function sek_edit() {
 	global $SQL_DBConn;
 
