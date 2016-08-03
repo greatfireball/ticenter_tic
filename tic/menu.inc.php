@@ -38,16 +38,82 @@
 	</tr>
 	<tr><td>
 		<table cellspacing="1" style="width:100%;background:#000000;">
+			<!--<tr>
+				<td class="menu"><a href="./main.php?modul=scans"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" /><i>Scan-Erfassen</i></a></td>
+			</tr>-->
 			<tr>
-				<td class="menu"><a href="./main.php?modul=scans"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Scan-Erfassen</a></td>
+				<td class="menu" title="beta, bitte testen!"><a href="./main.php?modul=scans2"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Scan-Erfassen 2.0</a></td>
 			</tr>
-			<!--
-			<tr>
-				<td class="menu"><a href="./main.php?modul=ircpaste"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />IRC-Paste</a></td>
-			</tr>
-			//-->
 			<tr>
 				<td class="menu"><a href="./main.php?modul=showgalascans&amp;displaytype=0&amp;xgala=<?=$Benutzer['galaxie']?>&amp;xplanet=<?=$Benutzer['planet']?>"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Scan-Datenbank</a></td>
+			</tr>
+			<tr>
+				<td class="menu"><a href="./main.php?modul=scanrequest"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Scan-Anfragen<?php
+
+
+				if($Benutzer['scananfragen']) {
+					$num = 0;
+
+					if($Benutzer['scantyp'] == 0 || $Benutzer['scantyp'] == 3 || $Benutzer['scantyp'] == 4) {
+						$sql = "SELECT count(*) FROM (SELECT DISTINCT s.meta, s.allianz_name, r.ziel_g, r.ziel_p, s.spieler_name, s.spieler_punkte, r.scantyp, blocks.svs, blocks.typ, r.t
+								FROM gn4scanrequests r
+								LEFT JOIN gn_spieler2 s ON s.spieler_galaxie = r.ziel_g AND s.spieler_planet = r.ziel_p
+								LEFT JOIN (SELECT b1.g, b1.p, b1.svs, b1.typ
+											FROM gn4scanblock b1
+											WHERE b1.svs = (SELECT MAX(b2.svs)
+															FROM gn4scanblock b2
+															WHERE b2.g = b1.g AND b2.p = b1.p)
+											) blocks
+									ON blocks.g = r.ziel_g AND blocks.p = r.ziel_p
+								WHERE (r.scantyp IN (0, 3) AND NOT EXISTS(
+										SELECT * FROM
+											(SELECT UNIX_TIMESTAMP(STR_TO_DATE(zeit, '%H:%i %d.%m.%Y')) t, `type`, rg, rp, g, p FROM gn4scans
+											UNION
+											SELECT t, `type`, rg, rp, g, p FROM gn4scans_history) x
+										WHERE rg = r.ziel_g AND rp = r.ziel_p AND `type` = r.scantyp AND t > r.t - 15 * 60
+									)
+									OR r.scantyp = 4 AND NOT EXISTS(
+										SELECT * FROM gn4scans_news WHERE ziel_g = r.ziel_g AND ziel_p = r.ziel_p AND t > r.t
+									)
+									)
+									AND s.spieler_name IS NOT NULL
+								) tmp";
+						$num += mysql_result(tic_mysql_query($sql, __FILE__, __LINE__), 0, 0);
+					}
+
+					if($Benutzer['scantyp'] == 0 || $Benutzer['scantyp'] == 1 || $Benutzer['scantyp'] == 2) {
+						$sql = "SELECT count(*) FROM (SELECT DISTINCT s.meta, s.allianz_name, r.ziel_g, r.ziel_p, s.spieler_name, s.spieler_punkte, r.scantyp, blocks.svs, blocks.typ, r.t
+								FROM gn4scanrequests r
+								LEFT JOIN gn_spieler2 s ON s.spieler_galaxie = r.ziel_g AND s.spieler_planet = r.ziel_p
+								LEFT JOIN (SELECT b1.g, b1.p, b1.svs, b1.typ
+											FROM gn4scanblock b1
+											WHERE b1.svs = (SELECT MAX(b2.svs)
+															FROM gn4scanblock b2
+															WHERE b2.g = b1.g AND b2.p = b1.p)
+											) blocks
+									ON blocks.g = r.ziel_g AND blocks.p = r.ziel_p
+								WHERE r.scantyp IN (0, 1, 2) AND NOT EXISTS(
+										SELECT * FROM
+											(SELECT UNIX_TIMESTAMP(STR_TO_DATE(zeit, '%H:%i %d.%m.%Y')) t, `type`, rg, rp, g, p FROM gn4scans
+											UNION
+											SELECT t, `type`, rg, rp, g, p FROM gn4scans_history) x
+										 WHERE rg = r.ziel_g AND rp = r.ziel_p AND `type` = r.scantyp AND t > r.t - 15 * 60
+									)
+									AND s.spieler_name IS NOT NULL
+								) tmp";
+						$num += mysql_result(tic_mysql_query($sql, __FILE__, __LINE__), 0, 0);
+					}
+
+					echo ' (';
+					if($num > 0) {
+						echo '<span style="color: red;">' . $num . '</span>';
+					} else {
+						echo $num;
+					}
+					echo ')';
+				}
+
+				?></a></td>
 			</tr>
 			<!--
 			<tr>
@@ -61,14 +127,33 @@
 				<td class="menu"><a href="./main.php?modul=profil"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Mein Profil</a></td>
 			</tr>
 			<tr>
-
-<?
-	$attanzahl = AttAnzahl($Benutzer['allianz'],$Benutzer['ticid'],0);
-	echo '			<td class="menu"><a href="./main.php?modul=attplanung"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Att-Planung (';
-	echo '<font color="#'.$ATTSTATUSHTML[1].'">'.$attanzahl.'</font>/';
-	$attanzahl = AttAnzahl($Benutzer['allianz'],$Benutzer['ticid'],1);
-	echo '<font color="#'.$ATTSTATUSHTML[5].'">'.$attanzahl.'</font>)</a></td>';
+<?php
+	$sql1 = "SET @gal = '".$Benutzer['galaxie']."', @pla = '".$Benutzer['planet']."'";
+	$sql2 = "SELECT	(SELECT COUNT(*) FROM gn4massinc_wellen w
+						WHERE NOT EXISTS(SELECT * FROM gn4massinc_atter_willing aw WHERE aw.project_fk = w.project_fk AND aw.welle = w.id AND aw.atter_gal = @gal AND aw.atter_pla = @pla)
+						AND (SELECT freigegeben FROM gn4massinc_projects WHERE project_id = w.project_fk) > 0) open,
+					(SELECT COUNT(*) FROM gn4massinc_atter_willing aw
+						WHERE aw.atter_gal = @gal AND aw.atter_pla = @pla AND aw.willing = 1 AND NOT EXISTS(SELECT * FROM gn4massinc_zuweisung zw WHERE aw.project_fk = zw.project_fk AND aw.welle = zw.welle AND zw.atter_gal = @gal AND zw.atter_pla = @pla)
+						) decided,
+					(SELECT COUNT(*) FROM gn4massinc_zuweisung zw WHERE zw.atter_gal = @gal AND zw.atter_pla = @pla) assigned";
+	//aprint(join(";\n\n", array($sql1, $sql2)));
+	tic_mysql_query($sql1, __FILE__, __LINE__);
+	$res = tic_mysql_query($sql2, __FILE__, __LINE__);
+	list($open, $decided, $assigned) = mysql_fetch_row($res);
 ?>
+				<td class="menu"><a href="./main.php?modul=massinc"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Att-Planung <?php
+	echo '(<span title="offen"'.($open > 0 ? ' style="color: red"' : '').'>';
+	echo $open;
+	echo '</span>/<span title="Flotten-Checkin"'.($decided > 0 ? ' style="color: green"' : '').'>';
+	echo $decided;
+	echo '</span>/<span title="zugewiesen"'.($assigned > 0 ? ' style="color: yellow"' : '').'>';
+	echo $assigned;
+	echo '</span>)';
+				
+				?></a></td>
+			</tr>
+			<tr>
+				<td class="menu"><a href="./main.php?modul=scanliste"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Scannerliste</a></td>
 			</tr>
 			<tr>
 				<td class="menu"><a href="./main.php?modul=NWshow"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Nachtwache</a></td>
@@ -147,7 +232,7 @@
 		</table>
 	</td></tr>
 <?php
-if ($Benutzer['rang'] >= $Rang_GC) {
+if($Benutzer['rang'] >= $Rang_GC) {
 ?>
 	<tr>
 		<td>&nbsp;</td>
@@ -166,7 +251,7 @@ GROUP BY s.allianz_name
 ORDER BY s.allianz_name";
 	$res = tic_mysql_query($sql);
 	$num = mysql_num_rows($res);
-	
+
 	echo '<td><table title="Anzahl erfafasster Scanblocks der letzten '.$time_h.'h." cellspacing="1" style="width:100%;background:#000000;">';
 	if($num > 0) {
 		for($i = 0; $i < $num; $i++) {
@@ -176,11 +261,15 @@ ORDER BY s.allianz_name";
 			$sg = mysql_result($res, $i, 'sg');
 			$sp = mysql_result($res, $i, 'sp');
 			$typ = mysql_result($res, $i, 'typ');
-			
+
 			echo '<tr><td>'.date('Y-m-d H:i', $t).'</td><td>'.$sg.':'.$sp.'</td><td>'.$g.':'.$p.'</td><td>'.$typ.'</td></tr>';*/
 			$ally = mysql_result($res, $i, 'allianz_name');
+			$tmp = strlen($ally);
+			$ally = substr($ally, 0, 20);
+			if($tmp > 20)
+				$ally .= '...';
 			$blocks = mysql_result($res, $i, 'blocks');
-			
+
 			echo '<tr><td bgcolor="#aaaaaa">'.$ally.'</td><td bgcolor="#aaaaaa" align="right">&nbsp;'.$blocks.'&nbsp;</td></tr>';
 		}
 	}

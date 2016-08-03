@@ -52,7 +52,7 @@
 		$koord_p = mysql_result($SQL_Result_user, $n, 'planet');
 
 // ------------------
-		$dsp .= "			<td bgcolor=".$farb_zusatz2.">" . getKampfSimuLinksForTarget($koord_g, $koord_p, "<img src=\"./bilder/default/swords.gif\" width=\"20\" height=\"20\" border=\"0\" alt=\"Flottengegenüberstellung anzeigen\" title=\"Flottengegenüberstellung anzeigen\"></a>")  ."</td>\n";
+		$dsp .= "			<td bgcolor=".$farb_zusatz2." style='text-align: center'>" . getKampfSimuLinksForTarget($koord_g, $koord_p, "<img src=\"./bilder/default/swords.gif\" width=\"20\" height=\"20\" border=\"0\" alt=\"Simulation\" title=\"Simulation\"></a>")  ."</td>\n";
 		$dsp .= "			<td bgcolor=\"".$htmlstyle['dunkel'.$farb_zusatz]."\" align=\"center\"><font size=\"-1\">".$koord_g.":".$koord_p."</font></td>\n";
 		$dsp .= "			<td bgcolor=\"".$htmlstyle['hell'.$farb_zusatz]."\"><font size=\"-1\">\n";
 		$dsp .= "				<a href=\"./main.php?modul=anzeigen&id=".mysql_result($SQL_Result_user, $n, 'id')."\"".($Benutzer['help']?" onmouseover=\"return overlib('Klick hier rauf um inc,deff usw. einzutragen ');\" onmouseout=\"return nd();\"":"").">".mysql_result($SQL_Result_user, $n, 'name')."</a>\n";
@@ -96,12 +96,12 @@
 
 				$flonr = mysql_result($SQL_Result_fleets, $x, 'flottennr');
 				$fbid = mysql_result($SQL_Result_fleets, $x, 'id');
-				$lnk = "<a href=\"".$scripturl."&action=flonrchange&fbid=".$fbid."&flonr=".$flonr."\"".($Benutzer['help']?" onmouseover=\"return overlib('Hier kannst du die Flott Nr. ändern. ');\" onmouseout=\"return nd();\"":"").">#".($flonr == 0?"?":$flonr)."</a>";
+				$lnk = "<a href=\"".$scripturl."&action=flonrchange&fbid=".$fbid."&flonr=".$flonr."\"".($Benutzer['help']?" onmouseover=\"return overlib('Hier kannst du die Flott Nr. &auml;ern. ');\" onmouseout=\"return nd();\"":"").">#".($flonr == 0?"?":$flonr)."</a>";
 				if ($f_mode == 1) {
 					$f1_liste_namen = $f1_liste_namen."				".$v_gala.":".$v_plan." <a href=\"./main.php?modul=flotteaendern&id=".mysql_result($SQL_Result_user, $n, 'id')."&flottenid=".$fbid."\" onmouseover=\"return overlib('Eingetragen von ".mysql_result($SQL_Result_fleets, $x, 'erfasser')." um ".mysql_result($SQL_Result_fleets, $x, 'erfasst_am')." ');\" onmouseout=\"return nd();\">".gnuser($v_gala, $v_plan)."</a> ".$lnk." ".$scan."<br>\n";
 					$f1_liste_eta = $f1_liste_eta ."				".getime4display(eta($time1) * $Ticks['lange'] - $tick_abzug)."<br>\n";
 				} else {
-					$f1_liste_namen = $f1_liste_namen."				Rückflug (".$v_gala.":".$v_plan." ".gnuser($v_gala, $v_plan).")<br>\n";
+					$f1_liste_namen = $f1_liste_namen."				R&uuml;ckflug (".$v_gala.":".$v_plan." ".gnuser($v_gala, $v_plan).")<br>\n";
 					$f1_liste_eta = $f1_liste_eta ."				".getime4display(eta($time3) * $Ticks['lange'] - $tick_abzug)."<br>\n";
 				}
 				if ($_GET['mode'] == 2) $display_line=1;
@@ -113,12 +113,12 @@
 //				$scan = "<a href=\"./main.php?modul=showgalascans&xgala=".$v_gala."&xplanet=".$v_plan."\">".GetScans2($SQL_DBConn, $v_gala, $v_plan)."</a>";
 				$flonr = mysql_result($SQL_Result_fleets, $x, 'flottennr');
 				$fbid = mysql_result($SQL_Result_fleets, $x, 'id');
-				$lnk = "<a href=\"".$scripturl."&action=flonrchange&fbid=".$fbid."&flonr=".$flonr."\"".($Benutzer['help']?" onmouseover=\"return overlib('Hier kannst du die Flott Nr. ändern. ');\" onmouseout=\"return nd();\"":"").">#".($flonr == 0?"?":$flonr)."</a>";
+				$lnk = "<a href=\"".$scripturl."&action=flonrchange&fbid=".$fbid."&flonr=".$flonr."\"".($Benutzer['help']?" onmouseover=\"return overlib('Hier kannst du die Flott Nr. &auml;ern. ');\" onmouseout=\"return nd();\"":"").">#".($flonr == 0?"?":$flonr)."</a>";
 				if ($f_mode == 2) {
 					$f2_liste_namen = $f2_liste_namen."				".$v_gala.":".$v_plan." <a href=\"./main.php?modul=flotteaendern&id=".mysql_result($SQL_Result_user, $n, 'id')."&flottenid=".$fbid."\" onmouseover=\"return overlib('Eingetragen von ".mysql_result($SQL_Result_fleets, $x, 'erfasser')." um ".mysql_result($SQL_Result_fleets, $x, 'erfasst_am')." ');\" onmouseout=\"return nd();\">".gnuser($v_gala, $v_plan)."</a> ".$lnk." ".$scan."<br>\n";
 					$f2_liste_eta = $f2_liste_eta ."				".getime4display(eta($time1) * $Ticks['lange'] - $tick_abzug)."<br>\n";
 				} else {
-					$f2_liste_namen = $f2_liste_namen."				Rückflug (".$v_gala.":".$v_plan." ".gnuser($v_gala, $v_plan).")<br>\n";
+					$f2_liste_namen = $f2_liste_namen."				R&uuml;ckflug (".$v_gala.":".$v_plan." ".gnuser($v_gala, $v_plan).")<br>\n";
 					$f2_liste_eta = $f2_liste_eta ."				".getime4display(eta($time3) * $Ticks['lange'] - $tick_abzug)."<br>\n";
 				}
 				if ($_GET['mode'] == 2) $display_line=1;
@@ -135,11 +135,11 @@
         } else {
           $scan = Get_Scan4($SQL_DBConn,$a_gala,$a_plan,$Benutzer['help'],$Benutzer['punkte'],$flonr);
         }
-				$lnk = "<a href=\"".$scripturl."&action=flonrchange&fbid=".$fbid."&flonr=".$flonr."\"".($Benutzer['help']?" onmouseover=\"return overlib('Hier kannst du die Flott Nr. ändern. ');\" onmouseout=\"return nd();\"":"").">#".($flonr == 0?"?":$flonr)."</a>";
+				$lnk = "<a href=\"".$scripturl."&action=flonrchange&fbid=".$fbid."&flonr=".$flonr."\"".($Benutzer['help']?" onmouseover=\"return overlib('Hier kannst du die Flott Nr. &auml;ern. ');\" onmouseout=\"return nd();\"":"").">#".($flonr == 0?"?":$flonr)."</a>";
 				$f3_liste_namen = $f3_liste_namen."				".($incunsave?"<font color=\"#FF0000\">":"").$a_gala.":".$a_plan.($incunsave?"</font>":"");
 				$f3_liste_namen = $f3_liste_namen." <a href=\"./main.php?modul=flotteaendern&id=".mysql_result($SQL_Result_user, $n, 'id')."&flottenid=".$fbid."\" onmouseover=\"return overlib('Eingetragen von ".mysql_result($SQL_Result_fleets, $x, 'erfasser')." um ".mysql_result($SQL_Result_fleets, $x, 'erfasst_am')." ');\" onmouseout=\"return nd();\">".gnuser($a_gala, $a_plan)."</a> ";
 				$f3_liste_namen = $f3_liste_namen.$lnk." ".$scan."<br>\n";
-				$f3_liste_eta = $f3_liste_eta ."				<a href=\"".$scripturl."&action=savechange&fbid=".$fbid."&incsave=".$incunsave."\"".($Benutzer['help']?" onmouseover=\"return overlib('Koords rot = Unsave<br>Koords schwarz = Save<br>Klick hier um zu ändern');\" onmouseout=\"return nd();\"":"").">".getime4display(eta($time1) * $Ticks['lange'] - $tick_abzug)."</a><br>\n";
+				$f3_liste_eta = $f3_liste_eta ."				<a href=\"".$scripturl."&action=savechange&fbid=".$fbid."&incsave=".$incunsave."\"".($Benutzer['help']?" onmouseover=\"return overlib('Koords rot = Unsave<br>Koords schwarz = Save<br>Klick hier um zu &auml;ern');\" onmouseout=\"return nd();\"":"").">".getime4display(eta($time1) * $Ticks['lange'] - $tick_abzug)."</a><br>\n";
 				$display_line=1;
 				$incsunsafe += $incunsave;
 			}
@@ -150,7 +150,7 @@
         $scan = Get_Scan3($SQL_DBConn,$a_gala,$a_plan,$Benutzer['help'],0);
 				$flonr = mysql_result($SQL_Result_fleets, $x, 'flottennr');
 				$fbid = mysql_result($SQL_Result_fleets, $x, 'id');
-				$lnk = "<a href=\"".$scripturl."&action=flonrchange&fbid=".$fbid."&flonr=".$flonr."\"".($Benutzer['help']?" onmouseover=\"return overlib('Hier kannst du die Flott Nr. ändern. ');\" onmouseout=\"return nd();\"":"").">#".($flonr == 0?"?":$flonr)."</a>";
+				$lnk = "<a href=\"".$scripturl."&action=flonrchange&fbid=".$fbid."&flonr=".$flonr."\"".($Benutzer['help']?" onmouseover=\"return overlib('Hier kannst du die Flott Nr. &auml;ern. ');\" onmouseout=\"return nd();\"":"").">#".($flonr == 0?"?":$flonr)."</a>";
 				$f4_liste_namen = $f4_liste_namen."				".$a_gala.":".$a_plan." <a href=\"./main.php?modul=flotteaendern&id=".mysql_result($SQL_Result_user, $n, 'id')."&flottenid=".$fbid."\" onmouseover=\"return overlib('Eingetragen von ".mysql_result($SQL_Result_fleets, $x, 'erfasser')." um ".mysql_result($SQL_Result_fleets, $x, 'erfasst_am')." ');\" onmouseout=\"return nd();\">".gnuser($a_gala, $a_plan)."</a> ";
 				$f4_liste_namen = $f4_liste_namen.$lnk." ".$scan."<br>\n";
 				$f4_liste_eta = $f4_liste_eta ."				".getime4display(eta($time1) * $Ticks['lange'] - $tick_abzug)."<br>\n";
@@ -210,7 +210,7 @@
 		//kommentare
 		$dsp .= "			<td bgcolor=\"".$htmlstyle['hell'.$farb_zusatz]."\">\n";
 
-		$comments_sql = "SELECT k.erfasser_g, k.erfasser_p, k.t, k.kommentar, u.name FROM gn4flottenbewegungen_kommentare k
+		$comments_sql = "SELECT k.id, k.erfasser_g, k.erfasser_p, k.t, k.kommentar, u.name FROM gn4flottenbewegungen_kommentare k
 left join gn4gnuser u on u.gala = k.erfasser_g AND u.planet = k.erfasser_p
 WHERE k.t > UNIX_TIMESTAMP(NOW()) - 60*15*40 AND k.g = '" . $koord_g . "' AND k.p = '" . $koord_p . "' ORDER BY k.t DESC";
 		$comments = tic_mysql_query($comments_sql, $SQL_DBConn); // or error("Error while bilding 'taktik' (step 2).", ERROR_SQL, false);
@@ -220,10 +220,18 @@ WHERE k.t > UNIX_TIMESTAMP(NOW()) - 60*15*40 AND k.g = '" . $koord_g . "' AND k.
 			$dsp .= '<table>';
 			for ($i = 0; $i < $comments_num; $i++) {
 				$t = mysql_result($comments, $i, 't');
+				$id = mysql_result($comments, $i, 'id');
 				$text = mysql_result($comments, $i, 'kommentar');
-				$erfasser = mysql_result($comments, $i, 'name') . ' (' . mysql_result($comments, $i, 'erfasser_g') . ':' . mysql_result($comments, $i, 'erfasser_p') . ')';
+				$erfasser_g = mysql_result($comments, $i, 'erfasser_g');
+				$erfasser_p = mysql_result($comments, $i, 'erfasser_p');
+				$erfasser = mysql_result($comments, $i, 'name') . ' (' . $erfasser_g . ':' . $erfasser_p . ')';
 				
-				$dsp .= '<tr><td valign="top" bgcolor="'.$htmlstyle['dunkel'.$farb_zusatz].'" align="right">' . round(($t - time()) / 60, 0) . '</td><td style="font-size: 8pt;">' . $erfasser . '<br/><span style="font-size: 7pt;">' . str_replace("\n", "<br/>", $text) . '</span></td></tr>';
+				$dsp .= '<tr><td valign="top" bgcolor="'.$htmlstyle['dunkel'.$farb_zusatz].'" align="right">' . round(($t - time()) / 60, 0) . '</td>';
+				$dsp .= '<td style="font-size: 8pt;">' . $erfasser . ' ';
+				if($Benutzer['rang'] >= $Rang_GC || $erfasser_g == $Benutzer['galaxie'] && $erfasser_p == $Benutzer['planet']) {
+					$dsp .= '<a href="main.php?modul=taktikbildschirm&mode='.$_GET['mode'].'&action=kommentar&del=' . $id . '" title="L&ouml;schen" onclick="return confirm(\'Bist Du Dir sicher?\')">[X]</a><br/>';
+				}
+				$dsp .= '<span style="font-size: 7pt;">' . str_replace("\n", "<br/>", $text) . '</span></td></tr>';
 			}
 			$dsp .= '</table>';
 		} else {

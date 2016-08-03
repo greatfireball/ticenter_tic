@@ -1,4 +1,9 @@
 <?php
+if($Benutzer['rang'] < $Rang_GC) {
+	aprint('Keine Berechtigung.');
+	die();
+}
+
 $hours = 36;
 ?>
 <center>
@@ -9,7 +14,7 @@ $hours = 36;
 		<td colspan="5">&nbsp;Scanner&nbsp;</td>
 		<td colspan="5">&nbsp;Ziel&nbsp;</td>
 		<td></td>
-		<td></td>
+		<td colspan="2"></td>
 	</tr>
 	<tr class="datatablehead">
 		<td>&nbsp;Meta&nbsp;</td>
@@ -24,6 +29,7 @@ $hours = 36;
 		<td>&nbsp;Spieler&nbsp;</td>
 		<td>&nbsp;Typ&nbsp;</td>
 		<td>&nbsp;Datum&nbsp;</td>
+		<td>&nbsp;Alter&nbsp;</td>
 	</tr>
 <?php
 	$sql = "SELECT s1.meta meta1, s1.allianz_name ally1, s2.meta meta2, s2.allianz_name ally2, s1.spieler_name name1, s2.spieler_name name2, b.sg, b.sp, b.t, b.g, b.p, b.typ
@@ -59,20 +65,23 @@ $hours = 36;
 			case 4: $typ = 'N'; break;
 			default: $typ = '<i>unknown</i>'; break;
 		}
+		$alter = round((time() - $t) / 60, 0);
+		$farbe = round((1 - $alter / 60 / $hours) * 255);
 		
 		echo '<tr class="fieldnormal'.($color ? 'light' : 'dark').'">';
-		echo '	<td>' . $meta1 . '</td>';
-		echo '	<td>' . $ally1 . '</td>';
-		echo '	<td>' . $g1 . '</td>';
-		echo '	<td>' . $p1 . '</td>';
-		echo '	<td>' . $name1 . '</td>';
-		echo '	<td>' . $meta2 . '</td>';
-		echo '	<td>' . $ally2 . '</td>';
-		echo '	<td>' . $g2 . '</td>';
-		echo '	<td>' . $p2 . '</td>';
-		echo '	<td>' . $name2 . '</td>';
-		echo '	<td>' . $typ . '</td>';
-		echo '	<td>' . date('Y-m-d H:i', $t) . '</td>';
+		echo '	<td>&nbsp;' . $meta1 . '&nbsp;</td>';
+		echo '	<td>&nbsp;' . $ally1 . '&nbsp;</td>';
+		echo '	<td align="right">&nbsp;' . $g1 . '&nbsp;</td>';
+		echo '	<td align="right">&nbsp;' . $p1 . '&nbsp;</td>';
+		echo '	<td>&nbsp;' . $name1 . '&nbsp;</td>';
+		echo '	<td>&nbsp;' . $meta2 . '&nbsp;</td>';
+		echo '	<td>&nbsp;' . $ally2 . '&nbsp;</td>';
+		echo '	<td align="right">&nbsp;' . $g2 . '&nbsp;</td>';
+		echo '	<td align="right">&nbsp;' . $p2 . '&nbsp;</td>';
+		echo '	<td>&nbsp;' . $name2 . '&nbsp;</td>';
+		echo '	<td>&nbsp;' . $typ . '&nbsp;</td>';
+		echo '	<td>&nbsp;' . date('Y-m-d H:i', $t) . '&nbsp;</td>';
+		echo '  <td align="right" style="color: white; background-color: rgb(' . $farbe . ', 0, 0);">&nbsp;' . ZahlZuText($alter) . '&nbsp;</td>';
 		echo '</tr>';
 		
 		$color = !$color;

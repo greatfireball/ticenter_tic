@@ -1,25 +1,6 @@
 <?
-// Ticks
-
-//	$Ticks['angriffsflug'] = 30;
-//	$Ticks['angriff'] = 5;
-//	$Ticks['verteidigungsflug'] = 22;
-//	$Ticks['verteidigen'] = 25;
-//	$Ticks['lange'] = 15
-
 	$tickm = $Ticks['lange'];
 
-/*
-	Änderungen für TIC mit hh:mm
-	alle Vorkommen von
-	($n * $tickm - $tick_abzug)
-	ersetzen durch
-	(($n * $tickm - $tick_abzug)<0?"00:00":sprintf("%02d:%02d",(($n * $tickm - $tick_abzug)/60),(($n * $tickm - $tick_abzug)%60)))
-	und alle Vorkommen von
-	($n * $tickm)
-	ersetzen durch
-	sprintf("%02d:%02d",(int)(($n * $tickm)/60),(int)(($n * $tickm)%60))
-*/
     if (isset($_GET['id'])) $_POST['id']=$_GET['id'];
     if (isset($_GET['flottenid'])) $_POST['flottenid']=$_GET['flottenid'];
 	if (!isset($_POST['flottenid'])) $_POST['flottenid'] = '';
@@ -34,7 +15,7 @@
 <CENTER>
 	<TABLE>
 		<TR>
-			<TD BGCOLOR=#333333><FONT COLOR=#FFFFFF><B>Flottenbewegung ändern</B></FONT></TD>
+			<TD BGCOLOR=#333333><FONT COLOR=#FFFFFF><B>Flottenbewegung &auml;ern</B></FONT></TD>
 		</TR>
 		<TR>
 			<TD>
@@ -92,7 +73,7 @@
 											echo '<INPUT TYPE="radio" NAME="optModus" VALUE="0" CHECKED>';
 										else
 											echo '<INPUT TYPE="radio" NAME="optModus" VALUE="0">';
-										echo 'Flotte befindet sich auf dem Rückflug von <B>'.mysql_result($SQL_Result, 0, 'verteidiger_galaxie').':'.mysql_result($SQL_Result, 0, 'verteidiger_planet').'</B>.  ETA: <SELECT NAME="lst_ETA0" SIZE=1>';
+										echo 'Flotte befindet sich auf dem R&uuml;ckflug von <B>'.mysql_result($SQL_Result, 0, 'verteidiger_galaxie').':'.mysql_result($SQL_Result, 0, 'verteidiger_planet').'</B>.  ETA: <SELECT NAME="lst_ETA0" SIZE=1>';
 										for ($n = $Ticks['angriffsflug']; $n > 0; $n--) {
 											if ($n == ($Ticks['angriffsflug'] - mysql_result($SQL_Result, 0, 'eta') + 1))
 													$tmp = ' SELECTED';
@@ -119,7 +100,7 @@
 										}
                     ?>
 									</SELECT>
-									<A HREF="javascript:document.frmAendern.submit()">Flottenbewegung ändern</A>
+									<A HREF="javascript:document.frmAendern.submit()">Flottenbewegung &auml;ern</A>
 								</TD>
 							</TR>
 						</TABLE>

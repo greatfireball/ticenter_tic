@@ -11,18 +11,12 @@
 ########################################
 */
 
+//error_reporting(E_ALL);
+
 include("GNSimuclass.php");
 $ticks = postOrGet('ticks') ? postOrGet('ticks') : 5;
 
 //aprint($_POST);
-
-function postOrGet($name) {
-	if(isset($_POST[$name]))
-		return $_POST[$name];
-	if(isset($_GET[$name]))
-		return $_GET[$name];
-	return null;
-}
 
 $num_flotten = postOrGet('num_flotten') ? postOrGet('num_flotten') : 1;
 $d = postOrGet('d');
@@ -57,13 +51,14 @@ if(postOrGet('referenz')) {
 		if(!$g[$i] || !$p[$i]) {
 			continue;
 		}
-		
+
 		$mysql_senden[0] = 'SELECT id, gen, unix_timestamp(STR_TO_DATE(zeit,  \'%H:%i %d.%m.%Y\' )) as t, me, ke FROM gn4scans WHERE rg="'.$g[$i].'" AND rp="'.$p[$i].'" AND type="0" LIMIT 1;';
 		$mysql_senden[1] = 'SELECT id, gen, unix_timestamp(STR_TO_DATE(zeit,  \'%H:%i %d.%m.%Y\' )) as t, sfj, sfb, sff, sfz, sfkr, sfsa, sft, sfka, sfsu FROM gn4scans WHERE rg="'.$g[$i].'" AND rp="'.$p[$i].'" AND type="1" LIMIT 1;';
 		$mysql_senden[2] = 'SELECT id, gen, unix_timestamp(STR_TO_DATE(zeit,  \'%H:%i %d.%m.%Y\' )) as t, glo, glr, gmr, gsr, ga FROM gn4scans WHERE rg="'.$g[$i].'" AND rp="'.$p[$i].'" AND type="3" LIMIT 1;';
 		$mysql_senden[3] = 'SELECT id, gen, unix_timestamp(STR_TO_DATE(zeit,  \'%H:%i %d.%m.%Y\' )) as t, sf0j, sf0b, sf0f, sf0z, sf0kr, sf0sa, sf0t, sf0ka, sf0su, sf1j, sf1b, sf1f, sf1z, sf1kr, sf1sa, sf1t, sf1ka, sf1su, sf2j, sf2b, sf2f, sf2z, sf2kr, sf2sa, sf2t, sf2ka, sf2su FROM gn4scans WHERE rg="'.$g[$i].'" AND rp="'.$p[$i].'" AND type="2" LIMIT 1;';
 		$mysql_senden[4] = "SELECT name FROM gn4gnuser WHERE gala = '".$g[$i]."' AND planet = '".$p[$i]."' LIMIT 1";
 		$res = mysql_multi_query($mysql_senden, 1);
+//aprint($res);
 
 		if(!isset($res[4]['name'])) {
 			$res[4]['name'] = '<i>unknown</i>';
@@ -199,6 +194,7 @@ if(postOrGet('referenz')) {
 			}
 		}
 	}
+
 }
 function createFleet($dataRow, $aufenthalt, $ankunft, $isAtt, $txt, $g, $p, $fno) {
 	$fleet = new Fleet();
@@ -223,7 +219,7 @@ function createFleet($dataRow, $aufenthalt, $ankunft, $isAtt, $txt, $g, $p, $fno
 
 	$fleet->atter_exenM = $dataRow[14] ? $dataRow[14] : 0;
 	$fleet->atter_exenK = $dataRow[15] ? $dataRow[15] : 0;
-	
+
 	//aprint($fleet);
 	return $fleet;
 }
@@ -237,7 +233,7 @@ if(postOrGet('compute')) {
 		if($g[$i] && $p[$i]) {
 			$txt = $g[$i].':'.$p[$i].' ';
 			if($f[$i] == 0)
-				$txt .= 'all';
+				$txt .= 'Alles';
 			else if($f[$i] == 1 || $f[$i] == 2)
 				$txt .= '#' . $f[$i];
 			else
@@ -258,13 +254,15 @@ if(postOrGet('compute')) {
 	$gnsimu_m->Exen_K = $d[0][15];
 }
 
+
 echo '<a name="oben"></a><center>';
-echo '<h2>GN-Kampfsimulator v1.3</h2><p>Bitte beaeugt die Ergebnisse des Simulators kritisch und meldet unbedingt vermeintliche Fehler!<br/>Die Bergungsressourcen aus Vorticks werden ggf. noch falsch berechnet - testet das gerne.<br/>Ferner zaehlt derzeit noch nur die orbitale erste Flotte Bergungsmaessig zum eigentlichen Verteidiger.<br/>Danke. /dv</p>';
+echo '<h2>GN-Kampfsimulator v1.3</h2>';
 echo '<form action="./main.php?modul=kampf" method="post">';
 echo '<input type="hidden" name="modul" value="kampf"/>';
-echo 'Anzahl Flotten: <input tabindex="1" type="text" size="4" maxlength="4" name="num_flotten" value="'.$num_flotten.'" /> <input tabindex="2" type="submit" value="W&auml;hlen" /><br />';
-if(postOrGet('compute'))
+echo 'Anzahl Flotten: <input tabindex="1" type="text" size="4" maxlength="3" name="num_flotten" value="'.$num_flotten.'" /> <input tabindex="2" type="submit" value="W&auml;hlen" /><br />';
+if(postOrGet('compute')) {
 	echo '<div style="text-align: right"><a href="#overview">&raquo; zum Ergebnis</a></div><br/>';
+}
 echo '<br />';
 echo '</center>';
 
@@ -294,7 +292,7 @@ if(count($usedscans) > 0) {
 <table align="center" class="datatable">
 <tr class="datatablehead">
 	<td>Schiffstyp</td>
-	<td>Verteidigender Orbit</td>
+	<td>Orbit</td>
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
 		echo '<td>Flotte ' . $i . '</td>';
@@ -306,9 +304,9 @@ if(count($usedscans) > 0) {
 <?php
 	for($i = 0; $i <= $num_flotten; $i++) {
 		echo '<td>';
-		echo '<input tabindex="'.(10*($i+1)+1).'" type="text" size="4" maxlength="4" name="g['.$i.']" value="'.$g[$i].'" />:<input tabindex="'.(10*($i+1)+2).'"type="text" size="2" maxlength="2" name="p['.$i.']" value="'.$p[$i].'" />';
-		echo '<select tabindex="'.(10*($i+1)+3).'" name="f['.$i.']">';
-		echo '<option value="0"'.($f[$i] == 0 ? ' selected="selected"' : '').'>all</option>';
+		echo '<input tabindex="'.(10*($i+1)+1).'" type="text" size="2" maxlength="6" name="g['.$i.']" value="'.$g[$i].'" />:<input tabindex="'.(10*($i+1)+2).'"type="text" size="2" maxlength="3" name="p['.$i.']" value="'.$p[$i].'" />';
+		echo '<br/>Flotte: <select tabindex="'.(10*($i+1)+3).'" name="f['.$i.']">';
+		echo '<option value="0"'.($f[$i] == 0 ? ' selected="selected"' : '').'>Alles</option>';
 		echo '<option value="1"'.($f[$i] == 1 ? ' selected="selected"' : '').'>#1</option>';
 		echo '<option value="2"'.($f[$i] == 2 ? ' selected="selected"' : '').'>#2</option>';
 		echo '<option value="3"'.($f[$i] == 3 ? ' selected="selected"' : '').'>Orbit</option>';
@@ -338,18 +336,11 @@ if(count($usedscans) > 0) {
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
 		echo '	<td>
-		<select tabindex="'.(600+$i).'" name="ankunft['.$i.']">
-			<option value="1"'.((isset($ankunft[$i]) && $ankunft[$i] == 1) ? ' selected="selected"' : '').'>1</option>
-			<option value="2"'.((isset($ankunft[$i]) && $ankunft[$i] == 2) ? ' selected="selected"' : '').'>2</option>
-			<option value="3"'.((isset($ankunft[$i]) && $ankunft[$i] == 3) ? ' selected="selected"' : '').'>3</option>
-			<option value="4"'.((isset($ankunft[$i]) && $ankunft[$i] == 4) ? ' selected="selected"' : '').'>4</option>
-			<option value="5"'.((isset($ankunft[$i]) && $ankunft[$i] == 5) ? ' selected="selected"' : '').'>5</option>
-			<option value="6"'.((isset($ankunft[$i]) && $ankunft[$i] == 6) ? ' selected="selected"' : '').'>6</option>
-			<option value="7"'.((isset($ankunft[$i]) && $ankunft[$i] == 7) ? ' selected="selected"' : '').'>7</option>
-			<option value="8"'.((isset($ankunft[$i]) && $ankunft[$i] == 8) ? ' selected="selected"' : '').'>8</option>
-			<option value="9"'.((isset($ankunft[$i]) && $ankunft[$i] == 9) ? ' selected="selected"' : '').'>9</option>
-			<option value="10"'.((isset($ankunft[$i]) && $ankunft[$i] == 10) ? ' selected="selected"' : '').'>10</option>
-		</select>
+		<select tabindex="'.(600+$i).'" name="ankunft['.$i.']">';
+		for($j = 1; $j <= 50; $j++) {
+			echo '<option value="'.$j.'"'.((isset($ankunft[$i]) && $ankunft[$i] == $j) ? ' selected="selected"' : '').'>'.$j.'</option>';
+		}
+		echo '</select>
 	</td>';
 	}
 ?>
@@ -363,7 +354,7 @@ if(count($usedscans) > 0) {
 
 		for($j = 1; $j <= 20; $j++) {
 			if(!isset($aufenthalt[$i]) || $aufenthalt[$i] == 0) {
-				$aufenthalt[$i] = ($typ[$j] == 'a') ? 5 : 20;
+				$aufenthalt[$i] = (!$typ[$j] && $j > 0 || $typ[$j] == 'a') ? 5 : 20;
 			}
 			echo '<option value="'.$j.'"'.(($aufenthalt[$i] == $j) ? ' selected="selected"' : '').'>'.$j.'</option>';
 		}
@@ -373,122 +364,122 @@ if(count($usedscans) > 0) {
 ?>
 </tr>
 <tr class="fieldnormallight">
-	<td>J&auml;ger - Leo:</td>
-	<td><input tabindex="1000" type="text" name="d[0][0]" value="<?=$d[0][0]; ?>" /></td>
+	<td>J&auml;ger:</td>
+	<td><input size="6" maxlength="6" tabindex="1000" type="text" name="d[0][0]" value="<?=$d[0][0]; ?>" /></td>
 
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input tabindex="'.(1000*($i+1)+0).'" type="text" name="d['.$i.'][0]" value="'.$d[$i][0].'" /></td>';
+		echo '<td><input size="6" maxlength="6" tabindex="'.(1000*($i+1)+0).'" type="text" name="d['.$i.'][0]" value="'.$d[$i][0].'" /></td>';
 	}
 ?>
 </tr>
 <tr class="fieldnormaldark">
-	<td>Bomber - Aquilae:</td>
-	<td><input tabindex="1010" type="text" name="d[0][1]" value="<?=$d[0][1]; ?>" /></td>
+	<td>Bomber:</td>
+	<td><input size="6" maxlength="6" tabindex="1010" type="text" name="d[0][1]" value="<?=$d[0][1]; ?>" /></td>
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input tabindex="'.(1000*($i+1)+1).'" type="text" name="d['.$i.'][1]" value="'.$d[$i][1].'" /></td>';
+		echo '<td><input size="6" maxlength="6" tabindex="'.(1000*($i+1)+1).'" type="text" name="d['.$i.'][1]" value="'.$d[$i][1].'" /></td>';
 	}
 ?>
 </tr>
 <tr class="fieldnormallight">
-	<td>Fregatte - Fronax:</td>
-	<td><input tabindex="1020" type="text" name="d[0][2]" value="<?=$d[0][2]; ?>" /></td>
+	<td>Fregatte:</td>
+	<td><input size="6" maxlength="6" tabindex="1020" type="text" name="d[0][2]" value="<?=$d[0][2]; ?>" /></td>
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input tabindex="'.(1000*($i+1)+2).'" type="text" name="d['.$i.'][2]" value="'.$d[$i][2].'" /></td>';
+		echo '<td><input size="6" maxlength="6" tabindex="'.(1000*($i+1)+2).'" type="text" name="d['.$i.'][2]" value="'.$d[$i][2].'" /></td>';
 	}
 ?>
 </tr>
 <tr class="fieldnormaldark">
-	<td>Zerst&ouml;rer - Draco:</td>
-	<td><input tabindex="1030" type="text" name="d[0][3]" value="<?=$d[0][3]; ?>" /></td>
+	<td>Zerst&ouml;rer:</td>
+	<td><input size="6" maxlength="6" tabindex="1030" type="text" name="d[0][3]" value="<?=$d[0][3]; ?>" /></td>
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input tabindex="'.(1000*($i+1)+3).'" type="text" name="d['.$i.'][3]" value="'.$d[$i][3].'" /></td>';
+		echo '<td><input size="6" maxlength="6" tabindex="'.(1000*($i+1)+3).'" type="text" name="d['.$i.'][3]" value="'.$d[$i][3].'" /></td>';
 	}
 ?>
 </tr>
 <tr class="fieldnormallight">
-	<td>Kreuzer - Goron:</td>
-	<td><input tabindex="1040" type="text" name="d[0][4]" value="<?=$d[0][4]; ?>" /></td>
+	<td>Kreuzer:</td>
+	<td><input size="6" maxlength="6" tabindex="1040" type="text" name="d[0][4]" value="<?=$d[0][4]; ?>" /></td>
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input tabindex="'.(1000*($i+1)+4).'" type="text" name="d['.$i.'][4]" value="'.$d[$i][4].'" /></td>';
+		echo '<td><input size="6" maxlength="6" tabindex="'.(1000*($i+1)+4).'" type="text" name="d['.$i.'][4]" value="'.$d[$i][4].'" /></td>';
 	}
 ?>
 </tr>
 <tr class="fieldnormaldark">
-	<td>Schlachtschiff - Pentalin:</td>
-	<td><input tabindex="1050" type="text" name="d[0][5]" value="<?=$d[0][5]; ?>" /></td>
+	<td>Schlachtschiff:</td>
+	<td><input size="6" maxlength="6" tabindex="1050" type="text" name="d[0][5]" value="<?=$d[0][5]; ?>" /></td>
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input tabindex="'.(1000*($i+1)+5).'" type="text" name="d['.$i.'][5]" value="'.$d[$i][5].'" /></td>';
-	}
-?>
-</tr>
-<tr class="fieldnormallight">
-	<td>Tr&auml;gerschiff - Zenit:</td>
-	<td><input tabindex="1060" type="text" name="d[0][6]" value="<?=$d[0][6]; ?>" /></td>
-<?php
-	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input tabindex="'.(1000*($i+1)+6).'" type="text" name="d['.$i.'][6]" value="'.$d[$i][6].'" /></td>';
-	}
-?>
-</tr>
-<tr class="fieldnormaldark">
-	<td>Kaperschiff - Cleptor:</td>
-	<td><input tabindex="1070" type="text" name="d[0][7]" value="<?=$d[0][7]; ?>" /></td>
-<?php
-	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input tabindex="'.(1000*($i+1)+7).'" type="text" name="d['.$i.'][7]" value="'.$d[$i][7].'" /></td>';
+		echo '<td><input size="6" maxlength="6" tabindex="'.(1000*($i+1)+5).'" type="text" name="d['.$i.'][5]" value="'.$d[$i][5].'" /></td>';
 	}
 ?>
 </tr>
 <tr class="fieldnormallight">
-	<td>Schutzschiff - Cancri:</td>
-	<td><input tabindex="1080" type="text" name="d[0][8]" value="<?=$d[0][8]; ?>" /></td>
+	<td>Tr&auml;gerschiff:</td>
+	<td><input size="6" maxlength="6" tabindex="1060" type="text" name="d[0][6]" value="<?=$d[0][6]; ?>" /></td>
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input tabindex="'.(1000*($i+1)+8).'" type="text" name="d['.$i.'][8]" value="'.$d[$i][8].'" /></td>';
+		echo '<td><input size="6" maxlength="6" tabindex="'.(1000*($i+1)+6).'" type="text" name="d['.$i.'][6]" value="'.$d[$i][6].'" /></td>';
 	}
 ?>
 </tr>
 <tr class="fieldnormaldark">
-	<td>Leichtes Orbitalgesch&uuml;tz - Rubium:</td>
-	<td><input tabindex="1090" type="text" name="d[0][9]" value="<?=$d[0][9]; ?>" /></td>
+	<td>Kaperschiff:</td>
+	<td><input size="6" maxlength="6" tabindex="1070" type="text" name="d[0][7]" value="<?=$d[0][7]; ?>" /></td>
+<?php
+	for($i = 1; $i <= $num_flotten; $i++) {
+		echo '<td><input size="6" maxlength="6" tabindex="'.(1000*($i+1)+7).'" type="text" name="d['.$i.'][7]" value="'.$d[$i][7].'" /></td>';
+	}
+?>
 </tr>
 <tr class="fieldnormallight">
-	<td>Leichtes Raumgesch&uuml;tz - Pulsar:</td>
-	<td><input tabindex="1100" type="text" name="d[0][10]" value="<?=$d[0][10]; ?>" /></td>
+	<td>Schutzschiff:</td>
+	<td><input size="6" maxlength="6" tabindex="1080" type="text" name="d[0][8]" value="<?=$d[0][8]; ?>" /></td>
+<?php
+	for($i = 1; $i <= $num_flotten; $i++) {
+		echo '<td><input size="6" maxlength="6" tabindex="'.(1000*($i+1)+8).'" type="text" name="d['.$i.'][8]" value="'.$d[$i][8].'" /></td>';
+	}
+?>
 </tr>
 <tr class="fieldnormaldark">
-	<td>Mittlers Raumgesch&uuml;tz - Coon:</td>
-	<td><input tabindex="1110" type="text" name="d[0][11]" value="<?=$d[0][11]; ?>" /></td>
+	<td>Leichtes Orbitalgesch&uuml;tz:</td>
+	<td><input size="6" maxlength="6" tabindex="1090" type="text" name="d[0][9]" value="<?=$d[0][9]; ?>" /></td>
 </tr>
 <tr class="fieldnormallight">
-	<td>Schweres Raumgesch&uuml;tz - Centurion:</td>
-	<td><input tabindex="1120" type="text" name="d[0][12]" value="<?=$d[0][12]; ?>" /></td>
+	<td>Leichtes Raumgesch&uuml;tz:</td>
+	<td><input size="6" maxlength="6" tabindex="1100" type="text" name="d[0][10]" value="<?=$d[0][10]; ?>" /></td>
 </tr>
 <tr class="fieldnormaldark">
-	<td>Abfangj&auml;ger - Horus:</td>
-	<td><input tabindex="1130" type="text" name="d[0][13]" value="<?=$d[0][13]; ?>" /></td>
+	<td>Mittlers Raumgesch&uuml;tz:</td>
+	<td><input size="6" maxlength="6" tabindex="1110" type="text" name="d[0][11]" value="<?=$d[0][11]; ?>" /></td>
+</tr>
+<tr class="fieldnormallight">
+	<td>Schweres Raumgesch&uuml;tz:</td>
+	<td><input size="6" maxlength="6" tabindex="1120" type="text" name="d[0][12]" value="<?=$d[0][12]; ?>" /></td>
+</tr>
+<tr class="fieldnormaldark">
+	<td>Abfangj&auml;ger:</td>
+	<td><input size="6" maxlength="6" tabindex="1130" type="text" name="d[0][13]" value="<?=$d[0][13]; ?>" /></td>
 </tr>
 <tr class="fieldnormallight">
 	<td>Metalextraktoren:</td>
-	<td><input tabindex="1200" type="text" name="d[0][14]" value="<?=$d[0][14]; ?>" /></td>
+	<td><input size="6" maxlength="6" tabindex="1200" type="text" name="d[0][14]" value="<?=$d[0][14]; ?>" /></td>
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input id="d'.$i.'_14" tabindex="'.(1000*($i+1)+14).'" type="text" name="d['.$i.'][14]" value="'.($d[$i][14] > 0 ? $d[$i][14] : '').'" /></td>';
+		echo '<td><input size="6" maxlength="6" id="d'.$i.'_14" tabindex="'.(1000*($i+1)+14).'" type="text" name="d['.$i.'][14]" value="'.($d[$i][14] > 0 ? $d[$i][14] : '').'" /></td>';
 	}
 ?>
 </tr>
 <tr class="fieldnormaldark">
 	<td>Kristalextraktoren:</td>
-	<td><input tabindex="1300" type="text" name="d[0][15]" value="<?=$d[0][15]; ?>" /></td>
+	<td><input size="6" maxlength="6" tabindex="1300" type="text" name="d[0][15]" value="<?=$d[0][15]; ?>" /></td>
 <?php
 	for($i = 1; $i <= $num_flotten; $i++) {
-		echo '<td><input id="d'.$i.'_15" tabindex="'.(1000*($i+1)+15).'" type="text" name="d['.$i.'][15]" value="'.($d[$i][15] > 0 ? $d[$i][15] : '').'" /></td>';
+		echo '<td><input size="6" maxlength="6" id="d'.$i.'_15" tabindex="'.(1000*($i+1)+15).'" type="text" name="d['.$i.'][15]" value="'.($d[$i][15] > 0 ? $d[$i][15] : '').'" /></td>';
 	}
 ?>
 </tr>
@@ -515,7 +506,7 @@ if($ticks<1)
 if(postOrGet('compute')) {
 	//sort gnsimu-
 	$gnsimu_m->sortFleets();
-	
+
 	if(postOrGet('preticks')) {
 		for($i = 0; $i < 2; $i++) {
 			//aprint('', 'before pre gunticks');
@@ -560,10 +551,41 @@ if(postOrGet('compute')) {
     $gnsimu_m->PrintOverView();
 
 	echo '<div style="text-align: right;"><a href="#oben">&raquo; nach oben</a></div>';
-/*aprint(array(
-	'Att' => $gnsimu_m->AttFleets,
-	'Deff' => $gnsimu_m->DeffFleets
-), 'Fleets');*/
+
+$tmpstr = '';
+if(is_array(postOrGet('g')))
+	foreach(postOrGet('g') as $k=>$v) {
+		$tmpstr .= '&g['.$k.']='.$v;
+	}
+if(is_array(postOrGet('p')))
+	foreach(postOrGet('p') as $k=>$v) {
+		$tmpstr .= '&p['.$k.']='.$v;
+	}
+if(is_array(postOrGet('d')))
+	foreach(postOrGet('d') as $k=>$v) {
+		foreach($v as $k2 => $v2) {
+			$tmpstr .= '&d['.$k.']['.$k2.']='.$v2;
+		}
+	}
+if(is_array(postOrGet('aufenthalt')))
+	foreach(postOrGet('aufenthalt') as $k=>$v) {
+		$tmpstr .= '&aufenthalt['.$k.']='.$v;
+	}
+if(is_array(postOrGet('ankunft')))
+	foreach(postOrGet('ankunft') as $k=>$v) {
+		$tmpstr .= '&ankunft['.$k.']='.$v;
+	}
+if(is_array(postOrGet('typ')))
+	foreach(postOrGet('typ') as $k=>$v) {
+		$tmpstr .= '&typ['.$k.']='.$v;
+	}
+if(is_array(postOrGet('f')))
+	foreach(postOrGet('f') as $k=>$v) {
+		$tmpstr .= '&f['.$k.']='.$v;
+	}
+
+$short = addShortUrl('main.php?modul=kampf&preticks='.postOrGet('preticks').'&ticks='.postOrGet('ticks').'&num_flotten='.postOrGet('num_flotten').'&compute=doIt'.$tmpstr);
+echo '<div style="text-align: right;">'.createCopyLink('&raquo; Link zu dieser Simulation kopieren', $short).' | <a href="' . $short . '">&raquo; Link zu dieser Simulation</a></div>';
 }
 
 ?>

@@ -32,32 +32,45 @@ class Fleet
 	var $TicksToWait;   // Dauer in Ticks, bis die Flotte angreift/verteidgt
 	var $TicksToStay;   // Wieviele Ticks die Flotte angreift/verteidgt
 	var $ArrivalTick;
+	var $Endtick;
+
 	var $text;
+
 	var $showInSum = false;
 	var $abschuesse = array();
+	var $abschuesseThisTick = array();
 	var $abschuesse_pretick = array();
+
 	var $atter_exenM;
 	var $atter_exenK;
-	
+
+	var $bergungM = 0;
+	var $bergungK = 0;
+
 	var $g;
 	var $p;
 	var $fleet;
+
+	var $extern;
 }
+
 class GNSimu_Multi
 {
 	var $currentTick = -2;
 	var $AttFleets;
 	var $DeffFleets;
-	var $Deff;      // Gesch&uuml;tze des Verteidigers
 	var $Exen_M;    // Metall-Extarktoren des Verteidigers
 	var $Exen_K;    // Kristall-Extarktoren des Verteidigers
 	var $shipdata;
+
+	var $bergungPrimeDeffer = array(0, 0);
+	var $bergungExternalDeffer = array(0, 0);
 
 	function GNSimu_Multi()
 	{
 		$playerFleetAtt = array();
 		$playerFleetDeff = array();
-		
+
 		// Daten für Jäger Nr. 0
 		$this->shipdata[0]['name'] = "J&auml;ger";
 		$this->shipdata[0]['attakpower']  = array(0.0246, 0.392, 0.0263); // Wie viele Schiffe ein Schiff mit 100% Feuerkrafft zerstören wrde
@@ -126,7 +139,7 @@ class GNSimu_Multi
 		$this->shipdata[10]['prefire_shiptoattak'] = array(2);
 		// Daten für Mittleres Raumgeschütz Nr. 11
 		$this->shipdata[11]['attakpower']  = array(0.9143,0.4267);
-		$this->shipdata[11]['shiptoatta'] = array(3,4);
+		$this->shipdata[11]['shiptoattak'] = array(3,4);
 		$this->shipdata[11]['percent']     = array(0.4,0.6);
 		$this->shipdata[11]['cost'] =  array(60000, 100000);
 		$this->shipdata[11]['name'] = "Mittleres Raumgesch&uuml;tz";
@@ -150,6 +163,68 @@ class GNSimu_Multi
 		$this->shipdata[13]['percent']     = array(0.4,0.6);
 		$this->shipdata[13]['cost'] = array(1000, 1000);
 		$this->shipdata[13]['name'] = "Abfangj&auml;ger";
+	}
+
+	function finalize() {
+		//prüfen, ob flotten genug träger für den rückfkug haben
+		for($i = 1; $i < count($this->DeffFleets); $i++) {
+			if($this->DeffFleets[$i]->Endtick != $this->currentTick || $this->DeffFleets[$i]->arrival >= $this->currentTick)
+				continue;
+
+			$numJa = $this->DeffFleets[$i]->Ships[0];
+			$numBo = $this->DeffFleets[$i]->Ships[1];
+			$num = $numJa + $numBo;
+			$traeger = $this->DeffFleets[$i]->Ships[6];
+			$lost = $num - 100 * $traeger;
+
+			if($lost > 0) {
+				$lostJa = round($numJa / $num * $lost, 0);
+				$lostBo = round($numBo / $num * $lost, 0);
+				aprint(array(
+					'tick' => $this->currentTick + 1,
+					'fleet' => $this->DeffFleets[$i],
+					'num' => $lost,
+					'ja' => $lostJa,
+					'bo' => $lostBo,
+					), 'verlust durch fehlende traegerkaparitaet bei rueckflug; die schiffe kämpfen den tick noch mit.');
+
+				$this->DeffFleets[$i]->Ships[0] -= $lostJa;
+				$this->DeffFleets[$i]->Ships[1] -= $lostBo;
+				$this->DeffFleets[$i]->LostShips[0] += $lostJa;
+				$this->DeffFleets[$i]->LostShips[1] += $lostBo;
+			}
+		}
+
+		for($i = 0; $i < count($this->AttFleets); $i++) {
+			if($this->AttFleets[$i]->Endtick != $this->currentTick + 1 || $this->AttFleets[$i]->arrival >= $this->currentTick)
+				continue;
+
+			$numJa = $this->AttFleets[$i]->Ships[0];
+			$numBo = $this->AttFleets[$i]->Ships[1];
+			$num = $numJa + $numBo;
+			$traeger = $this->AttFleets[$i]->Ships[6];
+			$lost = $num - 100 * $traeger;
+
+			if($lost > 0) {
+				$lostJa = round($numJa / $num * $lost, 0);
+				$lostBo = round($numBo / $num * $lost, 0);
+				aprint(array(
+					'tick' => $this->currentTick + 1,
+					'fleet' => array(
+						$this->AttFleets[$i]->ArrivalTick,
+						$this->AttFleets[$i]->Endtick,
+					),
+					'num' => $lost,
+					'ja' => $lostJa,
+					'bo' => $lostBo,
+					), 'verlust durch fehlende traegerkaparitaet bei rueckflug; die schiffe k&auml;mpfen den tick noch mit.');
+
+				$this->AttFleets[$i]->Ships[0] -= $lostJa;
+				$this->AttFleets[$i]->Ships[1] -= $lostBo;
+				$this->AttFleets[$i]->LostShips[0] += $lostJa;
+				$this->AttFleets[$i]->LostShips[1] += $lostBo;
+			}
+		}
 	}
 
 	function preFireCombatRound($shipid, $defendingArmy, $attackingArmy, $prefiretick) {
@@ -217,7 +292,9 @@ class GNSimu_Multi
 						'todel' => $todel
 					), 'combatRoundValues');*/
 
-					//maybe remove other ships as a consequrnce of this deletions.
+					//maybe remove other ships as a consequrnce of these deletions.
+					/*
+					//incorrect this way. the ships remain as long as there is capacity.
 					if(isset($this->shipdata[$attackShipId]['prefire_consequences_for']))
 					{
 						$num = count($this->shipdata[$attackShipId]['prefire_consequences_for']);
@@ -226,6 +303,7 @@ class GNSimu_Multi
 							$todel[$consequencedShipId] += $del * $this->shipdata[$attackShipId]['prefire_consequences_factor'][$x] / $num;
 						}
 					}
+					*/
 				}
 
 			}
@@ -256,6 +334,7 @@ class GNSimu_Multi
 		//aprint($TotalAtt, 'Att');
 		//aprint($TotalDeff, 'Def');
 
+		$abschuesse = array();
 		for($i = 0; $i < 14; $i++) {
 			if(isset($this->shipdata[$i]['prefire_ticks']) && in_array($tick, $this->shipdata[$i]['prefire_ticks'])) {
 				//combat round
@@ -266,7 +345,8 @@ class GNSimu_Multi
 				{
 					if($TotalAtt[$j] > 0)
 					{
-						for($k = 0;$k < count($this->AttFleets);$k++)
+						//abschuesse auf attfleet rechnen
+						for($k = 0; $k < count($this->AttFleets); $k++)
 						{
 							if(!($this->AttFleets[$k]->ArrivalTick == $this->currentTick + $tick))
 								continue;
@@ -275,29 +355,34 @@ class GNSimu_Multi
 								$t = round($TotalAtt[$j] / $this->AttFleets[$k]->Ships[$j] * $todel[$j]);
 							$this->AttFleets[$k]->LostShips[$j] += $t;
 							$this->AttFleets[$k]->Ships[$j] -= $t;
-							if($this->AttFleets[$k]->Ships[$j] < 0) $this->AttFleets[$k]->Ships[$j] = 0;
-						}
-					}
-				}
+							$abschuesse[$j] += $t;
 
-				//calc
-				foreach($todel as $key=>$value) {
-					$TotalAtt[$key] -= $value;
+						}//for attfleets
 
-					$this->DeffFleets[0]->abschuesse_pretick[$key] += $value;
+						//abschuesse + bergung deffer
+						$this->DeffFleets[0]->abschuesse_pretick[$j] += $todel[$j];
+						//bergung
+						$this->DeffFleets[0]->bergungM += $todel[$j] * $this->shipdata[$j]['cost'][0] * .4;
+						$this->DeffFleets[0]->bergungK += $todel[$j] * $this->shipdata[$j]['cost'][1] * .4;
+					}//if totalatt > 0
+				} //for atter ship type
+			} //if prefire
+		}//for deff type
 
-					if($TotalAtt[$key] < 0)
-						$TotalAtt[$key] = 0;
-				}
-			}
-		}//for
-		//aprint($this->AttFleets, 'FleetsAfter');
+		/*
+		aprint(array(
+			'deff' => $this->DeffFleets,
+			'att' => $this->AttFleets
+		));
+		*/
 	}
 
 	function Tick($debug)
 	{
 		for($i = 0;$i < count($this->AttFleets);$i++)
 		{
+			$this->AttFleets[$i]->abschuesseThisTick = array();
+
 			if($this->AttFleets[$i]->TicksToWait == 0)
 			{
 				$this->AttFleets[$i]->showInSum = true;
@@ -316,6 +401,8 @@ class GNSimu_Multi
 		}
 		for($i = 0;$i < count($this->DeffFleets);$i++)
 		{
+			$this->DeffFleets[$i]->abschuesseThisTick = array();
+
 			if($this->DeffFleets[$i]->TicksToWait == 0)
 			{
 				$this->DeffFleets[$i]->showInSum = true;
@@ -405,7 +492,11 @@ class GNSimu_Multi
 
 						//abschüsse
 						for($k = 0; $k < count($this->AttFleets); $k++) {
-							$this->AttFleets[$k]->abschuesse[$this->shipdata[$i]['shiptoattak'][$j]] += round($del * $this->AttFleets[$k]->OldShips[$i] / $TotalAtt[$i],0);
+							if($del == 0)
+								continue;
+							$tmp = round($del * $this->AttFleets[$k]->OldShips[$i] / $TotalAtt[$i],0);
+							$this->AttFleets[$k]->abschuesseThisTick[$this->shipdata[$i]['shiptoattak'][$j]] += $tmp;
+							$this->AttFleets[$k]->abschuesse[$this->shipdata[$i]['shiptoattak'][$j]] += $tmp;
 						}
 
 						if($debug)
@@ -444,7 +535,17 @@ class GNSimu_Multi
 
 						//abschüsse
 						for($k = 0; $k < count($this->DeffFleets); $k++) {
-							$this->DeffFleets[$k]->abschuesse[$this->shipdata[$i]['shiptoattak'][$j]] += round($del * $this->DeffFleets[$k]->OldShips[$i] / $TotalDeff[$i],0);
+							if($del == 0)
+								continue;
+/*aprint(array(
+	'fleetid' => $k,
+	'del' => $del,
+	'ships' => $this->DeffFleets[$k]->OldShips[$i],
+	'total' => $TotalDeff[$i],
+	), 'abschuesse deff');*/
+							$tmp = round($del * $this->DeffFleets[$k]->OldShips[$i] / $TotalDeff[$i], 0);
+							$this->DeffFleets[$k]->abschuesseThisTick[$this->shipdata[$i]['shiptoattak'][$j]] += $tmp;
+							$this->DeffFleets[$k]->abschuesse[$this->shipdata[$i]['shiptoattak'][$j]] += $tmp;
 						}
 
 						if($debug)
@@ -462,18 +563,20 @@ class GNSimu_Multi
 //aprint($ToDestroyDeff, 'ToDestroyDeff');
 //aprint($this->DeffFleets);
 
+
 		//Todel verrechnen
 		for($i = 0;$i < 14;$i++)
 		{
-			if($TotalAtt[$i] > 0 && $ToDestroyAtt[$i])
+			if($TotalAtt[$i] > 0 && $ToDestroyAtt[$i] > 0)
 			{
+				$ref = $TotalAtt[$i];
 				for($j = 0;$j < count($this->AttFleets);$j++)
 				{
 					if($this->AttFleets[$j]->TicksToWait > 0 || $this->AttFleets[$j]->TicksToStay < 0 || !$this->AttFleets[$j]->showInSum)
 						continue;
 					$t = 0;
 					if($this->AttFleets[$j]->Ships[$i] > 0)
-						$t = round($this->AttFleets[$j]->Ships[$i] / $TotalAtt[$i] * $ToDestroyAtt[$i]);
+						$t = round($this->AttFleets[$j]->Ships[$i] / $ref * $ToDestroyAtt[$i], 0);
 					/*aprint(array(
 						'$i' => $i,
 						'$this->AttFleets[$j]->Ships[$i]' => $this->AttFleets[$j]->Ships[$i],
@@ -481,11 +584,11 @@ class GNSimu_Multi
 						'$ToDestroyAtt[$i]' => $ToDestroyAtt[$i],
 						'$t' => $t
 					), 'ToDestroy');*/
-					
+
 					if($t > 0) {
 						$this->AttFleets[$j]->LostShips[$i] += $t;
 						$this->AttFleets[$j]->Ships[$i] -= $t;
-						if($this->AttFleets[$j]->Ships[$i] < 0) 
+						if($this->AttFleets[$j]->Ships[$i] < 0)
 							$this->AttFleets[$j]->Ships[$i] = 0;
 						$TotalAtt[$i] -= $t;
 					}
@@ -493,34 +596,39 @@ class GNSimu_Multi
 			}
 			if($TotalDeff[$i] > 0 && $ToDestroyDeff[$i] > 0)
 			{
+				$ref = $TotalDeff[$i];
 				for($j = 0;$j < count($this->DeffFleets);$j++)
 				{
-					/*aprint(array(
-						'fleet $j' => $j,
-						'shiptype $i' => $i,
-						'$this->DeffFleets[$j]->Ships[$i]' => $this->DeffFleets[$j]->Ships[$i],
-						'$this->DeffFleets[$j]->TicksToWait' => $this->DeffFleets[$j]->TicksToWait,
-						'$this->DeffFleets[$j]->TicksToStay' => $this->DeffFleets[$j]->TicksToStay,
-						'$this->DeffFleets[$j]->showInSum' => $this->AttFleets[$j]->showInSum,
-					), 'fleetinfo deff');*/
+
+/*aprint(array(
+	'fleet $j' => $j,
+	'shiptype $i' => $i,
+	'$this->DeffFleets[$j]->Ships[$i]' => $this->DeffFleets[$j]->Ships[$i],
+	'$this->DeffFleets[$j]->TicksToWait' => $this->DeffFleets[$j]->TicksToWait,
+	'$this->DeffFleets[$j]->TicksToStay' => $this->DeffFleets[$j]->TicksToStay,
+	'$this->DeffFleets[$j]->showInSum' => $this->AttFleets[$j]->showInSum,
+), 'fleetinfo deff');*/
 					if($this->DeffFleets[$j]->TicksToWait > 0 || $this->DeffFleets[$j]->TicksToStay < 0 || !$this->DeffFleets[$j]->showInSum)
 						continue;
+					$t = 0;
 					if($this->DeffFleets[$j]->Ships[$i] > 0)
-						$t = round($this->DeffFleets[$j]->Ships[$i] / $TotalDeff[$i] * $ToDestroyDeff[$i]);
-					/*aprint(array(
-						'fleet $j' => $j,
-						'shiptype $i' => $i,
-						'$this->DeffFleets[$j]->Ships[$i]' => $this->DeffFleets[$j]->Ships[$i],
-						'$TotalDeff[$i]' => $TotalDeff[$i],
-						'$ToDestroyDeff[$i]' => $ToDestroyDeff[$i],
-						'$t' => $t,
-						'fleet' => $this->DeffFleets[$j],
-					), 'todel deff');*/
-					
+						$t = round($this->DeffFleets[$j]->Ships[$i] / $ref * $ToDestroyDeff[$i], 0);
+/*
+aprint(array(
+	'fleet $j' => $j,
+	'shiptype $i' => $i,
+	'$this->DeffFleets[$j]->Ships[$i]' => $this->DeffFleets[$j]->Ships[$i],
+	'$TotalDeff[$i]' => $TotalDeff[$i],
+	'$ToDestroyDeff[$i]' => $ToDestroyDeff[$i],
+	'$t' => $t,
+	'fleet' => $this->DeffFleets[$j],
+), 'todel deff');
+*/
+
 					if($t > 0) {
 						$this->DeffFleets[$j]->LostShips[$i] += $t;
 						$this->DeffFleets[$j]->Ships[$i] -= $t;
-						if($this->DeffFleets[$j]->Ships[$i] < 0) 
+						if($this->DeffFleets[$j]->Ships[$i] < 0)
 							$this->DeffFleets[$j]->Ships[$i] = 0;
 						$TotalDeff[$i] -= $t;
 					}
@@ -528,7 +636,86 @@ class GNSimu_Multi
 			}//if totaldeff i > 0
 		}//for todel schiffe
 
-//aprint($this->DeffFleets);
+//aprint('Die Bergungsressourcen sind noch fehlerhaft.', 'INFO');
+		//bergungsres
+		//  abschuesse + total res
+		$total_abschuesse_ext_deffer_num = array();
+		$total_abschuesse_ext_deffer_overall_num = 0;
+
+		//komplett res (atter+deffer)
+		$totalResM = 0;
+		$totalResK = 0;
+
+		$tmp = $this->calcResForShipsArray($ToDestroyDeff);
+		$totalResM += $tmp[0];
+		$totalResK += $tmp[1];
+
+		$tmp = $this->calcResForShipsArray($ToDestroyAtt);
+		$totalResM += $tmp[0];
+		$totalResK += $tmp[1];
+
+		if(is_array($this->AttFleets)) {
+			foreach($this->AttFleets as $v) {
+				$totalResM -= 1500 * ($v->StolenExenMthisTick + $v->StolenExenKthisTick);
+				$totalResK -= 1000 * ($v->StolenExenMthisTick + $v->StolenExenKthisTick);
+			}
+		}
+
+		for($i = 0; $i < count($this->DeffFleets); $i++) {
+			if($this->DeffFleets[$i]->extern) {
+				//anzahl
+				$total_abschuesse_ext_deffer_num[$i] += array_sum($this->DeffFleets[$i]->abschuesseThisTick);
+				$total_abschuesse_ext_deffer_overall_num += array_sum($this->DeffFleets[$i]->abschuesseThisTick);
+			}
+		}//for fleets
+
+		//  verteilung auf die flotten
+		for($i = 1; $i < count($this->DeffFleets); $i++) {
+			//nur relavant für extern
+			if($this->DeffFleets[$i]->extern) {
+				//aprint($tmp, 'ext fleet ' . $i);
+				if($total_abschuesse_ext_deffer_num[$i] > 0) {
+					$fraction = $total_abschuesse_ext_deffer_num[$i] / $total_abschuesse_ext_deffer_overall_num;
+					$this->DeffFleets[$i]->bergungM += round($fraction * $totalResM * 0.2, 0);
+					$this->DeffFleets[$i]->bergungK += round($fraction * $totalResK * 0.2, 0);
+
+					$this->bergungExternalDeffer[0] += round($fraction * $totalResM * 0.2, 0);
+					$this->bergungExternalDeffer[1] += round($fraction * $totalResK * 0.2, 0);
+/*
+aprint(array(
+	'$ToDestroyDeff' => $ToDestroyDeff,
+	'$ToDestroyAtt' => $ToDestroyAtt,
+	'$this->calcResForShipsArray($ToDestroyDeff)' => $this->calcResForShipsArray($ToDestroyDeff),
+	'$this->calcResForShipsArray($ToDestroyAtt)' => $this->calcResForShipsArray($ToDestroyAtt),
+	'totalResM' => $totalResM,
+	'totalResK' => $totalResK,
+	'$total_abschuesse_ext_deffer_num[$i]' => $total_abschuesse_ext_deffer_num[$i],
+	'$total_abschuesse_ext_deffer_overall_num' => $total_abschuesse_ext_deffer_overall_num,
+	'$fraction' => $fraction,
+	'$this->DeffFleets[$i]->bergungM' => $this->DeffFleets[$i]->bergungM,
+	'$this->DeffFleets[$i]->bergungK' => $this->DeffFleets[$i]->bergungK,
+	'$this->bergungExternalDeffer' => $this->bergungExternalDeffer
+), 'bergung ' . $i);
+*/
+				}
+			}
+		}
+		//intern ist immer fester satz.
+		$this->DeffFleets[0]->bergungM += $totalResM * 0.4;
+		$this->DeffFleets[0]->bergungK += $totalResK * 0.4;
+		$this->bergungPrimeDeffer[0] = $this->DeffFleets[0]->bergungM;
+		$this->bergungPrimeDeffer[1] = $this->DeffFleets[0]->bergungK;
+/*
+aprint(array(
+	'bergungPrimeDeffer' => $this->bergungPrimeDeffer,
+	'bergungExternalDeffer' => $this->bergungExternalDeffer,
+
+));
+*/
+		//traeger-kapazitaetsverlute
+		$this->finalize();
+
+		//aprint($this->DeffFleets);
 
 		//Dann noch mal eben schnell paar exen klauen
 		//Erstmall ausrechnen, wie viele maximal mitgenommen werden k?nen, bin der Meinung mal Iregndwo im Forum gelesen zu haben, dass Metall- auf- und Kristallexen abgerundet werden
@@ -556,13 +743,13 @@ class GNSimu_Multi
 		{
 			$this->AttFleets[$j]->StolenExenMthisTick = 0;
 			$this->AttFleets[$j]->StolenExenKthisTick = 0;
-			
+
 			if($this->AttFleets[$j]->TicksToWait > 0 || $this->AttFleets[$j]->TicksToStay < 0 || !$this->AttFleets[$j]->showInSum)
 				continue;
 
 			if($this->AttFleets[$j]->Ships[7] <= 0)
 				continue;
-			
+
 			//bruchteil dieser flotte berechnen
 			$factor = $this->AttFleets[$j]->Ships[7] / $TotalAtt[7];
 			$xmexen = round($rmexen * $factor , 0);
@@ -584,7 +771,7 @@ class GNSimu_Multi
 			));
 			*/
 
-			// Exen vom bestand abziehen und auch die benutzen Cleps "zerst?en"
+			// Exen vom bestand abziehen und auch die benutzen Cleps "zerstören"
 			$this->AttFleets[$j]->Ships[7] -= $xmexen+$xkexen;
 			$this->AttFleets[$j]->LostShips[7] += $xmexen+$xkexen;
 			$this->AttFleets[$j]->StolenExenM += $xmexen;
@@ -598,6 +785,7 @@ class GNSimu_Multi
 	{
 		$fleet->OldShips = $fleet->Ships;
 		$fleet->ArrivalTick = $fleet->TicksToWait;
+		$fleet->Endtick = $fleet->ArrivalTick + $fleet->TicksToStay;
 		$this->AttFleets[] = &$fleet;
 	}
 
@@ -605,51 +793,27 @@ class GNSimu_Multi
 	{
 		$fleet->OldShips = $fleet->Ships;
 		$fleet->ArrivalTick = $fleet->TicksToWait;
+		$fleet->Endtick = $fleet->ArrivalTick + $fleet->TicksToStay;
 		$this->DeffFleets[] = &$fleet;
-		for($i = 9; $i < 14; $i++) {
-			$this->Deff[$i] += $fleet->Ships[$i] > 0 ? $fleet->Ships[$i] : 0;
-		}
 	}
 
-	function calcResForLost($fleet) {
-		$klost = 0;
-		$mlost = 0;
-		for($i=0;$i<14;$i++)
-		{
-			$mlost  += $this->shipdata[$i]['cost'][0]*$fleet->LostShips[$i];
-			$klost  += $this->shipdata[$i]['cost'][1]*$fleet->LostShips[$i];
-		}
-		$mlost -= ($fleet->StolenExenK + $fleet->StolenExenM) * $this->shipdata[7]['cost'][0];
-		$klost -= ($fleet->StolenExenK + $fleet->StolenExenM) * $this->shipdata[7]['cost'][1];
-		return array($mlost, $klost);
-	}
+	function calcResForShipsArray($array, $clepsForExen = 0) {
+		$sum = array(0, 0);
 
-	function calcResForSnipes($fleet) {
-		$klost = 0;
-		$mlost = 0;
-
-		if(is_array($fleet->abschuesse)) {
-			foreach($fleet->abschuesse as $k=>$v)
-			{
-				$mlost  += $this->shipdata[$k]['cost'][0]*$v;
-				$klost  += $this->shipdata[$k]['cost'][1]*$v;
+		if(is_array($array)) {
+			foreach($array as $k => $v) {
+				$sum[0] += $this->shipdata[$k]['cost'][0] * $v;
+				$sum[1] += $this->shipdata[$k]['cost'][1] * $v;
 			}
 		}
-		return array($mlost, $klost);
+
+		$sum[0] += $clepsForExen * $this->shipdata[7]['cost'][0];
+		$sum[1] += $clepsForExen * $this->shipdata[7]['cost'][1];
+
+		return $sum;
 	}
 
-	function calcResForPretick() {
-		$klost = 0;
-		$mlost = 0;
-
-		foreach($this->DeffFleets[0]->abschuesse_pretick as $k=>$v)
-		{
-			$mlost  += $this->shipdata[$k]['cost'][0]*$v;
-			$klost  += $this->shipdata[$k]['cost'][1]*$v;
-		}
-		return array($mlost, $klost);
-	}
-
+	//sortierung
 	function remapArray($array, $sortorder) {
 		$res = array();
 		for($i = 0; $i < count($sortorder); $i++) {
@@ -657,52 +821,58 @@ class GNSimu_Multi
 		}
 		return $res;
 	}
-	
+
+	function getFleetKey($g, $p, &$i) {
+		$key = $g . ':' . $p;
+		if(!$g || !$p) {
+			$key = 'z' . $i;
+			$i++;
+		}
+		return $key;
+	}
+
 	function sortFleets() {
 		$orderDeff = array();
 		$orderAtt = array();
-		
+
 		//deff
 		$deffer_g = $this->DeffFleets[0]->g;
 		$deffer_p = $this->DeffFleets[0]->p;
 		$i = 0;
 		foreach($this->DeffFleets as $k=>$v) {
-			$key = $v->g . ':' . $v->p;
-			if(!$v->g || !$v->p) {
-				$key = 'z' . $i;
-				$i++;
-			}
-				
+			$key = $this->getFleetKey($v->g, $v->p, $i);
+
 			$this->playerFleetDeff[$key]['fleetids'][] = $k;
 			$this->playerFleetDeff[$key]['type'][] = 'd';
 			$this->playerFleetDeff[$key]['external'][] = ($k == 0 || $v->g == $deffer_g && $v->p == $deffer_p) ? false : true;
+
+			$this->DeffFleets[$k]->extern = ($k == 0 || $v->g == $deffer_g && $v->p == $deffer_p) ? false : true;
 		}
 		//create actual sort order
 		ksort($this->playerFleetDeff);
 		foreach($this->playerFleetDeff as $v)
 			foreach($v['fleetids'] as $fid)
 				$orderDeff[] = $fid;
-		
+
 		//att
 		$i = 0;
-		foreach($this->AttFleets as $k=>$v) {
-			$key = $v->g . ':' . $v->p;
-			if(!$v->g || !$v->p) {
-				$key = 'z' . $i;
-				$i++;
+		if(is_array($this->AttFleets)) {
+			foreach($this->AttFleets as $k=>$v) {
+				$key = $this->getFleetKey($v->g, $v->p, $i);
+
+				$this->playerFleetAtt[$key]['fleetids'][] = $k;
+				$this->playerFleetAtt[$key]['type'][] = 'a';
+				$this->playerFleetAtt[$key]['external'][] = true;
+
+				$this->AttFleets[$k]->extern = true;
 			}
 
-			$this->playerFleetAtt[$key]['fleetids'][] = $k;
-			$this->playerFleetAtt[$key]['type'][] = 'a';
-			$this->playerFleetAtt[$key]['external'][] = true;
+			//create actual sort order
+			ksort($this->playerFleetAtt);
+			foreach($this->playerFleetAtt as $v)
+				foreach($v['fleetids'] as $fid)
+					$orderAtt[] = $fid;
 		}
-
-		//create actual sort order
-		ksort($this->playerFleetAtt);
-		foreach($this->playerFleetAtt as $v)
-			foreach($v['fleetids'] as $fid)
-				$orderAtt[] = $fid;
-				
 
 		//debug
 		/*
@@ -715,10 +885,19 @@ class GNSimu_Multi
 		$this->AttFleets = $this->remapArray($this->AttFleets, $orderAtt);
 		aprint($this->AttFleets, 'attfleets_sorted');
 		*/
+		//aprint($this->playerFleetAtt, 'att');
+		//aprint($this->playerFleetDeff, 'def');
 	}
-	
+
 	function PrintOverview()
 	{
+		$tmp = $this->calcResForShipsArray($this->DeffFleets[0]->abschuesse_pretick);
+		$this->bergungPrimeDeffer[0] += $tmp[0];
+		$this->bergungPrimeDeffer[1] += $tmp[1];
+		$this->DeffFleets[0]->bergungK += $tmp[0];
+		$this->DeffFleets[0]->bergungM += $tmp[1];
+
+		//aprint($this);
 		//head
 		echo "<br/><hr/><br/><a name='overview'></a><b>Verluste:</b><br/><table align=\"center\" class=\"datatable\" cellspacing=\"1\" style=\"padding:5px;\">";
 		//title
@@ -760,10 +939,10 @@ class GNSimu_Multi
 
 			if($i < 9) {
 				echo "<td bgcolor='".($color ? '#ffcccc' : '#ffbbbb')."'>".(isset($attsum->LostShips[$i]) ? $attsum->LostShips[$i] : 0)."</td>";
-				
+
 				for($j = 0; $j < count($this->DeffFleets); $j++) {
 					echo '<td>'.(isset($this->DeffFleets[$j]->LostShips[$i]) ? $this->DeffFleets[$j]->LostShips[$i] : 0).'</td>';
-					echo '<td style="color: #888888;">'.(isset($this->DeffFleets[$j]->abschuesse[$i]) ? $this->DeffFleets[$j]->abschuesse[$i] : 0).'</td>';
+					echo '<td style="color: #888888;">'.(0 + $this->DeffFleets[$j]->abschuesse[$i] + $this->DeffFleets[$j]->abschuesse_pretick[$i]).'</td>';
 				}
 				for($j = 0; $j < count($this->AttFleets); $j++) {
 					echo '<td>'.(isset($this->AttFleets[$j]->LostShips[$i]) ? $this->AttFleets[$j]->LostShips[$i] : 0).'</td>';
@@ -772,7 +951,7 @@ class GNSimu_Multi
 			} else {
 				echo '<td bgcolor="white" colspan="'.(1+count($this->DeffFleets)*2).'"></td>';
 				for($j = 0; $j < count($this->AttFleets); $j++) {
-					echo '<td bgcolor="white"></td><td style="color: #888888;">'.ZahlZuText($this->AttFleets[$j]->abschuesse[$i] ? $this->AttFleets[$j]->abschuesse[$i] : 0).'</td>';
+					echo '<td bgcolor="white"></td><td style="color: #888888;">'.ZahlZuText(0 + $this->AttFleets[$j]->abschuesse[$i] + $this->DeffFleets[$j]->abschuesse_pretick[$i]).'</td>';
 				}
 			}
 			echo "</tr>";
@@ -799,52 +978,30 @@ class GNSimu_Multi
 			echo '<td>'.(-1*($this->AttFleets[$i]->StolenExenK + $this->AttFleets[$i]->StolenExenM)).'</td><td bgcolor="white"><!--<td style="color: #888888;">'.array_sum($this->AttFleets[$i]->abschuesse).'//--></td>';
 		echo "</tr>";
 
-		//kosten neubau
-		$snipedResTotalByNonPrimeDeffer = array_sum($this->calcResForSnipes($defsum)) - array_sum($this->calcResForSnipes($this->DeffFleets[0]));
+		//kosten neubau gesamt
+		$atterLostM = $this->calcResForShipsArray($attsum->LostShips)[0];
+		$atterLostK = $this->calcResForShipsArray($attsum->LostShips)[1];
+		$deffLostM = $this->calcResForShipsArray($defsum->LostShips)[0];
+		$deffLostK = $this->calcResForShipsArray($defsum->LostShips)[1];
+
 		$verluste = array();
-		$atterLostM = $this->calcResForSnipes($defsum)[0];
-		$atterLostK = $this->calcResForSnipes($defsum)[1];
-		$deffLostM = $this->calcResForLost($defsum)[0];
-		$deffLostK = $this->calcResForLost($defsum)[1];
-		$pretickM = $this->calcResForPretick()[0];
-		$pretickK = $this->calcResForPretick()[1];
-		$bergungsresM = array();
-		$bergungsresK = array();
+
+		//kosten neubau pro flotte
 		for($i = 0; $i < count($this->DeffFleets); $i++) {
-			$verluste[$i] = $this->calcResForLost($this->DeffFleets[$i]);
-			$snipedRes[$i] = $this->calcResForSnipes($this->DeffFleets[$i]);
-
-			$bergungsresM[$i] = 0;
-			$bergungsresK[$i] = 0;
-
-			if($i == 0) {
-				$bergungsresM[$i] = floor(($atterLostM + $deffLostM + $pretickM) * .4);
-				$bergungsresK[$i] = floor(($atterLostK + $deffLostK + $pretickK) * .4);
-			} else if($snipedResTotalByNonPrimeDeffer > 0) {
-				$bergungsresM[$i] = floor(array_sum($snipedRes[$i]) / $snipedResTotalByNonPrimeDeffer * ($atterLostM + $deffLostM) * .4);
-				$bergungsresK[$i] = floor(array_sum($snipedRes[$i]) / $snipedResTotalByNonPrimeDeffer * ($atterLostK + $deffLostK) * .4);
-			}
+			$verlusteDef[$i] = $this->calcResForShipsArray($this->DeffFleets[$i]->LostShips);
 		}
-/*aprint(array(
-	'snipedResTotalByNonPrimeDeffer' => $snipedResTotalByNonPrimeDeffer,
-	'snipedRes' => $snipedRes,
-	'atterLostM' => $atterLostM,
-	'atterLostK' => $atterLostK,
-	'bergungsresM' => $bergungsresM,
-	'bergungsresK' => $bergungsresM
-));*/
 		for($i = 0; $i < count($this->AttFleets); $i++) {
-			$verluste[] = $this->calcResForLost($this->AttFleets[$i]);
+			$verlusteAtt[$i] = $this->calcResForShipsArray($this->AttFleets[$i]->LostShips);
 		}
-		
-		//kosten neubau
+
+		//kosten neubau anzeige
 		echo '<tr><td colspan="'.(3+2*count($this->DeffFleets) + 2*count($this->AttFleets)).'" style="font-size: 9pt; font-weight: bold;"><br/>Kosten f&uuml;r Neubau:</td></tr>';
 
 		echo "<tr class=\"datatablehead\">";
 		echo "<td></td><td>&nbsp;Summe Verteidigend&nbsp;</td><td>&nbsp;Summe Angreifend&nbsp;</td>";
 		echo '<td colspan="'.(2*count($this->DeffFleets)).'">Verteidigend</td><td colspan="'.(2*count($this->AttFleets)).'">Angreifend</td>';
 		echo "</tr>";
-		
+
 		echo '<tr class="datatablehead"><td></td><td colspan="2"></td>';
 		for($i = 0; $i < count($this->DeffFleets); $i++) {
 			if($this->DeffFleets[$i]->text)
@@ -862,79 +1019,60 @@ class GNSimu_Multi
 
 
 		//	M
-		echo '<tr class="fieldnormallight"><td>Metall</td><td bgcolor="#ccccff">'.ZahlZuText($this->calcResForLost($defsum)[0]).'</td><td bgcolor="#ffcccc">'.ZahlZuText($this->calcResForLost($attsum)[0]).'</td>';
-		for($i = 0; $i < count($verluste); $i++) {
-			echo '<td>'.ZahlZuText($verluste[$i][0]).'</td><td bgcolor="white"></td>';
+		echo '<tr class="fieldnormallight"><td>Metall</td><td bgcolor="#ccccff">'.ZahlZuText($deffLostM).'</td><td bgcolor="#ffcccc">'.ZahlZuText($atterLostM).'</td>';
+		for($i = 0; $i < count($verlusteDef); $i++) {
+			echo '<td>'.ZahlZuText($verlusteDef[$i][0]).'</td><td bgcolor="white"></td>';
+		}
+		for($i = 0; $i < count($verlusteAtt); $i++) {
+			echo '<td colspan="2">'.ZahlZuText($verlusteAtt[$i][0]).'</td>';
 		}
 		echo '</tr>';
 		//	K
-		echo '<tr class="fieldnormallight"><td>Kristall</td><td bgcolor="#ccccff">'.ZahlZuText($this->calcResForLost($defsum)[1]).'</td><td bgcolor="#ffcccc">'.ZahlZuText($this->calcResForLost($attsum)[1]).'</td>';
-		for($i = 0; $i < count($verluste); $i++) {
-			echo '<td>'.ZahlZuText($verluste[$i][1]).'</td><td bgcolor="white"></td>';
+		echo '<tr class="fieldnormallight"><td>Kristall</td><td bgcolor="#ccccff">'.ZahlZuText($deffLostK).'</td><td bgcolor="#ffcccc">'.ZahlZuText($atterLostK).'</td>';
+		for($i = 0; $i < count($verlusteDef); $i++) {
+			echo '<td>'.ZahlZuText($verlusteDef[$i][1]).'</td><td bgcolor="white"></td>';
+		}
+		for($i = 0; $i < count($verlusteAtt); $i++) {
+			echo '<td colspan="2">'.ZahlZuText($verlusteAtt[$i][1]).'</td>';
 		}
 		echo '</tr>';
 
-		//external deffer?
-		$externalDeff = false;
-		//aprint($this->DeffFleets);
-		for($i = 0; $i < count($this->DeffFleets); $i++) {
-			if(!($this->DeffFleets[$i]->g == $this->DeffFleets[0]->g && $this->DeffFleets[$i]->p == $this->DeffFleets[0]->p)) {
-				$externalDeff = true;
-				break;
-			}
-		}
-
 		//	M Bergung
-		$bergungM = floor(($atterLostM + $deffLostM + $pretickM) * .4);
-		$bergungM2 = $bergungM + floor(($atterLostM + $deffLostM) * .4);
-		echo '<tr class="fieldnormallight"><td title="Bei externen
-		Verteidigern gehen weitere 40% auf diese.&#013;Ausgenomen sind
-		Zerstörungen durch Vortick-Geschützfeuer.">- Bergungsmetall
-		(?)</td><td
-		bgcolor="#ccccff">'.ZahlZuText($bergungM).'<br/>'.($externalDeff ?
-		'('.ZahlZuText($snipedResTotalByNonPrimeDeffer > 0 ?
-		$bergungM2 : 0).')' : '').'</td>';
+		echo '<tr class="fieldnormallight"><td title="Der Angegriffene erh&auml;lt 40% Bergungsressourcen.&#013;Bei externen Verteidigern gehen weitere 20% auf diese.&#013;Ausgenomen sind Zerst&ouml;rungen durch Vortick-Gesch&uuml;tzfeuer.">Bergungsmetall (?)</td><td	bgcolor="#ccccff">-'.ZahlZuText($this->bergungPrimeDeffer[0]).'<br/>(-'.ZahlZuText($this->bergungPrimeDeffer[0] + $this->bergungExternalDeffer[0]).')</td>';
 
 		echo '<td bgcolor="white"></td>';
 		for($i = 0; $i < count($this->DeffFleets); $i++) {
-			echo '<td bgcolor="white"></td><td>'.ZahlZuText($bergungsresM[$i]).'</td>';
+			echo '<td bgcolor="white"></td><td>-'.ZahlZuText($this->DeffFleets[$i]->bergungM).'</td>';
 		}
 
 		echo '</tr>';
 		//	K Bergung
-		$bergungK = floor(($atterLostK + $deffLostK + $pretickK) * .4);
-		$bergungK2 = $bergungK + floor(($atterLostK + $deffLostK) * .4);
-		echo '<tr class="fieldnormallight"><td title="Bei externen
-		Verteidigern gehen weitere 40% auf diese.">- Bergungskristall
-		(?)</td><td
-		bgcolor="#ccccff">'.ZahlZuText($bergungK).'<br/>'.($externalDeff ?
-		'('.ZahlZuText($snipedResTotalByNonPrimeDeffer > 0 ? $bergungK2
-		: 0).')' : '').'</td>';
+		echo '<tr class="fieldnormallight"><td title="Der Angegriffene erh&auml;lt 40% Bergungsressourcen.&#013;Bei externen Verteidigern gehen weitere 20% auf diese.&#013;Ausgenomen sind Zerst&ouml;rungen durch Vortick-Gesch&uuml;tzfeuer.">Bergungskristall (?)</td><td	bgcolor="#ccccff">-'.ZahlZuText($this->bergungPrimeDeffer[1]).'<br/>-('.ZahlZuText($this->bergungPrimeDeffer[1] + $this->bergungExternalDeffer[1]).')</td>';
 
 		echo '<td bgcolor="white"></td>';
 		for($i = 0; $i < count($this->DeffFleets); $i++) {
-			echo '<td bgcolor="white"></td><td>'.ZahlZuText($bergungsresK[$i]).'</td>';
+			echo '<td bgcolor="white"></td><td>-'.ZahlZuText($this->DeffFleets[$i]->bergungK).'</td>';
 		}
 
 		echo '</tr>';
 
 		//	Summe
-		$total = $this->calcResForLost($defsum)[0] + $this->calcResForLost($defsum)[1] - $bergungK - $bergungM - $pretickK - $pretickM;
-		$total2 = ($snipedResTotalByNonPrimeDeffer > 0) ? $total - $bergungK
-		- $bergungM : 0;
-		echo '<tr class="fieldnormaldark"><td style="font-weight: bold;" rowspan="2">Verlustsumme</td><td bgcolor="#bbbbff" style="font-weight: bold;" rowspan="2">'.ZahlZuText($total).'<br/>'.($externalDeff ? '('.ZahlZuText($total2).')' : '').'</td><td bgcolor="#ffbbbb" style="font-weight: bold;" rowspan="2">'.ZahlZuText($this->calcResForLost($attsum)[0] + $this->calcResForLost($attsum)[1]).'</td>';
-		for($i = 0; $i < count($verluste); $i++) {
-			if($i < count($this->DeffFleets)) {
-				echo '<td>'.ZahlZuText($verluste[$i][0] + $verluste[$i][1]).'</td>';
-				echo '<td>-'.ZahlZuText($bergungsresM[$i] + $bergungsresK[$i]).'</td>';
-			} else {
-				echo '<td style="font-weight: bold;" colspan="2" rowspan="2">'.ZahlZuText($verluste[$i][0] + $verluste[$i][1]).'</td>';
-			}
+		echo '<tr class="fieldnormaldark">
+				<td style="font-weight: bold;" rowspan="2">Verlustsumme</td>
+				<td bgcolor="#bbbbff" style="font-weight: bold;" rowspan="2">'.ZahlZuText($deffLostK + $deffLostM - array_sum($this->bergungPrimeDeffer)).'<br/>('.ZahlZuText($deffLostK + $deffLostM - array_sum($this->bergungPrimeDeffer) - array_sum($this->bergungExternalDeffer)).')</td>
+				<td bgcolor="#ffbbbb" style="font-weight: bold;" rowspan="2">'.ZahlZuText($atterLostK + $atterLostM).'</td>';
+		for($i = 0; $i < count($this->DeffFleets); $i++) {
+			echo '<td>'.ZahlZuText($verlusteDef[$i][0] + $verlusteDef[$i][1]).'</td>';
+			echo '<td>-'.ZahlZuText($this->DeffFleets[$i]->bergungK + $this->DeffFleets[$i]->bergungM).'</td>';
+		}
+		for($i = 0; $i < count($this->AttFleets); $i++) {
+				echo '<td style="font-weight: bold;" colspan="2" rowspan="2">'.ZahlZuText($verlusteAtt[$i][0] + $verlusteAtt[$i][1]).'</td>';
 		}
 		echo '</tr>';
+
 		echo '<tr class="fieldnormallight" style="font-weight: bold;">';
 		for($i = 0; $i < count($this->DeffFleets); $i++) {
-			echo '<td colspan="2">'.ZahlZuText($verluste[$i][0] + $verluste[$i][1] - $bergungsresM[$i] - $bergungsresK[$i]).'</td>';
+			echo '<td colspan="2">'.ZahlZuText($verlusteDef[$i][0] + $verlusteDef[$i][1] - $this->DeffFleets[$i]->bergungK - $this->DeffFleets[$i]->bergungM).'</td>';
 		}
 		echo '</tr>';
 
@@ -942,36 +1080,29 @@ class GNSimu_Multi
 		$exen_gesamt_jetzt = $this->Exen_K + $this->Exen_M;
 		$exen_vorher = $exen_gesamt_jetzt + $exenverlust_gesamt;
 		$kosten_neubau_exen = ($exen_vorher*($exen_vorher+1) - ($exen_gesamt_jetzt*($exen_gesamt_jetzt+1))) / 2 * 65;
-		echo '<tr class="fieldnormallight"><td title="Ausgehend von nunmehr '.$exen_gesamt_jetzt.' Extraktoren kostet die Wiederherstellung auf '.$exen_vorher.' den folgenden Betrag.">+ Exen-Neubau (?)</td><td bgcolor="#ccccff">'.ZahlZuText($kosten_neubau_exen).'</td>';
+		echo '<tr class="fieldnormallight"><td title="Ausgehend von nunmehr '.$exen_gesamt_jetzt.' Extraktoren kostet die Wiederherstellung auf '.$exen_vorher.' den folgenden Betrag.">+ Exen-Neubau (?)</td><td bgcolor="#ccccff">'.ZahlZuText($kosten_neubau_exen).'<br/></td>';
 		echo '<td colspan="'.(1+2*count($this->DeffFleets)).'" bgcolor="white"></td>';
 
 		$x = 0;
 		for($i = 0; $i < count($this->AttFleets); $i++) {
-			$key = $this->AttFleets[$i]->g . ':' . $this->AttFleets[$i]->p;
-			if(!$this->AttFleets[$i]->g || !$this->AttFleets[$i]->p) {
-				$key = 'z' . $x;
-				$x++;
-			}
-			
-			if($i > 0 && in_array($i-1, $this->playerFleetAtt[$key]['fleetids'])) {
+			$key = $this->getFleetKey($this->AttFleets[$i]->g, $this->AttFleets[$i]->p, $i);
+
+			if($i > 0 && is_array($this->playerFleetAtt[$key]['fleetids']) && in_array($i-1, $this->playerFleetAtt[$key]['fleetids'])) {
 				//same fleet, do nothing.
 			} else {
 				$neueExen = 0;
 				$exen_vorher = 0;
-				foreach($this->playerFleetAtt[$key]['fleetids'] as $v) {
-					$neueExen += $this->AttFleets[$v]->StolenExenM + $this->AttFleets[$v]->StolenExenK;
-					$exen_vorher += $this->AttFleets[$v]->atter_exenM + $this->AttFleets[$v]->atter_exenK;
+				$verluste = 0;
+				if(is_array($this->playerFleetAtt[$key]['fleetids'])) {
+					foreach($this->playerFleetAtt[$key]['fleetids'] as $v) {
+						$neueExen += $this->AttFleets[$v]->StolenExenM + $this->AttFleets[$v]->StolenExenK;
+						$exen_vorher += $this->AttFleets[$v]->atter_exenM + $this->AttFleets[$v]->atter_exenK;
+						$verluste += $verlusteAtt[$v][0] + $verlusteAtt[$v][1];
+					}
 				}
 				$exen_gesamt_jetzt = $exen_vorher + $neueExen;
 				$kosten_neubau_exen = ($exen_vorher*($exen_vorher+1) - ($exen_gesamt_jetzt*($exen_gesamt_jetzt+1))) / 2 * 65;
-				/*aprint(array(
-					//'attfleets' => $this->AttFleets,
-					'exen alt' => $exen_vorher,
-					'exen neu' => $neueExen,
-					'exen gesamt jetzt' => $exen_gesamt_jetzt,
-					'kosten' => $kosten_neubau_exen
-				));*/
-				echo '<td title="Von '.ZahlZuText($exen_vorher).' Extraktoren kostet der Bau von '.ZahlZuText($neueExen).' auf gesamt '.ZahlZuText($exen_gesamt_jetzt).' Extraktoren diesen Betrag Metall." colspan="'.(2*count($this->playerFleetAtt[$key]['fleetids'])).'">' . ZahlZuText($kosten_neubau_exen) . ' <i>(?)</i></td>';
+				echo '<td title="Von '.ZahlZuText($exen_vorher).' Extraktoren kostet der Bau von '.ZahlZuText($neueExen).' auf gesamt '.ZahlZuText($exen_gesamt_jetzt).' Extraktoren diesen Betrag Metall." colspan="'.(2*count($this->playerFleetAtt[$key]['fleetids'])).'">' . ZahlZuText($kosten_neubau_exen) . ' <i>(?)</i><br/><i>('.ZahlZuText($neueExen > 0 ? $verluste/$neueExen : 0).' M/E)</i></td>';
 				$alteExen = 0;
 			}
 		}
@@ -980,34 +1111,26 @@ class GNSimu_Multi
 
 		//VAG
 		echo '<tr class="fieldnormaldark" style="font-style:
-		italic;"><td title="Im Verteidigungsfall dürfen bis
-		zu 50% der Verlustrohstoffe ersetzt werden.">Verlustausgleich Metall (?)</td><td colspan="4" bgcolor="white"></td>';
+		italic;"><td title="Verlustausgleich: Im Verteidigungsfall dürfen bis
+		zu 50% der Verlustrohstoffe ersetzt werden.">VAG Metall (?)</td><td colspan="4" bgcolor="white"></td>';
 		//M
 		$x = 0;
 		for($i = 1; $i < count($this->DeffFleets); $i++) {
-			$key = $this->DeffFleets[$i]->g . ':' . $this->DeffFleets[$i]->p;
-			if(!$this->DeffFleets[$i]->g || !$this->DeffFleets[$i]->p) {
-				$key = 'z' . $x;
-				$x++;
-			}
-			if(!in_array(0, $this->playerFleetDeff[$key]['fleetids']))
-				echo '<td colspan="2">-'.ZahlZuText($verluste[$i][0] / 2) .'</td>';
+			$key = $this->getFleetKey($this->DeffFleets[$i]->g, $this->DeffFleets[$i]->p, $i);
+			if(is_array($this->playerFleetDeff[$key]['fleetids']) && !in_array(0, $this->playerFleetDeff[$key]['fleetids']))
+				echo '<td colspan="2">-'.ZahlZuText($this->calcResForShipsArray($this->DeffFleets[$i]->LostShips)[0] / 2) .'</td>';
 			else
 				echo '<td colspan="2" bgcolor="white"></td>';
 		}
 		echo '</tr>';
 		//K
 		echo '<tr class="fieldnormallight" style="font-style:
-		italic;"><td title="Im Verteidigungsfall dürfen bis zu 50% der Verlustrohstoffe ersetzt werden.">Verlustausgleich Kristall (?)</td><td colspan="4" bgcolor="white"></td>';
+		italic;"><td title="Verlustausgleich: Im Verteidigungsfall dürfen bis zu 50% der Verlustrohstoffe ersetzt werden.">VAG Kristall (?)</td><td colspan="4" bgcolor="white"></td>';
 		$x = 0;
 		for($i = 1; $i < count($this->DeffFleets); $i++) {
-			$key = $this->DeffFleets[$i]->g . ':' . $this->DeffFleets[$i]->p;
-			if(!$this->DeffFleets[$i]->g || !$this->DeffFleets[$i]->p) {
-				$key = 'z' . $x;
-				$x++;
-			}
-			if(!in_array(0, $this->playerFleetDeff[$key]['fleetids']))
-				echo '<td colspan="2">-'.ZahlZuText($verluste[$i][1] / 2) .'</td>';
+			$key = $this->getFleetKey($this->DeffFleets[$i]->g, $this->DeffFleets[$i]->p, $i);
+			if(is_array($this->playerFleetDeff[$key]['fleetids']) && !in_array(0, $this->playerFleetDeff[$key]['fleetids']))
+				echo '<td colspan="2">-'. ZahlZuText($this->calcResForShipsArray($this->DeffFleets[$i]->LostShips)[1] / 2) .'</td>';
 			else
 				echo '<td colspan="2" bgcolor="white"></td>';
 		}
@@ -1022,10 +1145,15 @@ class GNSimu_Multi
 		$sum->StolenExenK = 0;
 		$sum->StolenExenMthisTick = 0;
 		$sum->StolenExenKthisTick = 0;
+		$sum->bergungK = 0;
+		$sum->bergungM = 0;
+
+		//fleets
 		for($i = 0; $i < count($fleets); $i++) {
-			if(($fleets[$i]->TicksToWait > 0 || $fleets[$i]->TicksToStay < 0 || !$fleets[$i]->showInSum) && !$all && !($tick && $fleets[$i]->ArrivalTick == $this->currentTick + $tick)) {
+			if(($fleets[$i]->TicksToWait > 0 || $fleets[$i]->TicksToStay < 0 || !$fleets[$i]->showInSum) && !$all && !($tick && $fleets[$i]->ArrivalTick == $this->currentTick + $tick))
 				continue;
-			}
+
+			//ships - old, ships & lost
 			$sum->Ships[$j] = 0;
 			$sum->OldShips[$j] = 0;
 			$sum->LostShips[$j] = 0;
@@ -1035,15 +1163,23 @@ class GNSimu_Multi
 				$sum->LostShips[$j] += $fleets[$i]->LostShips[$j] > 0 ? $fleets[$i]->LostShips[$j] : 0;
 			}
 
+			//snipes
 			if(is_array($fleets[$i]->abschuesse)) {
 				foreach($fleets[$i]->abschuesse as $k=>$v) {
 					$sum->abschuesse[$k] += $v;
 				}
 			}
 
+			//salvaging
+			$sum->bergungK += $fleets[$i]->bergungK;
+			$sum->bergungM += $fleets[$i]->bergungM;
+
+
+			//extractors
 			$sum->StolenExenM += $fleets[$i]->StolenExenM > 0 ? $fleets[$i]->StolenExenM : 0;
 			$sum->StolenExenK += $fleets[$i]->StolenExenK > 0 ? $fleets[$i]->StolenExenK : 0;
 
+			//ex last tick
 			$sum->StolenExenMthisTick += $fleets[$i]->StolenExenMthisTick > 0 ? $fleets[$i]->StolenExenMthisTick : 0;
 			$sum->StolenExenKthisTick += $fleets[$i]->StolenExenKthisTick > 0 ? $fleets[$i]->StolenExenKthisTick : 0;
 		}

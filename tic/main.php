@@ -13,9 +13,11 @@
 	#                                                        #
 	##########################################################
 */
-//	error_reporting(E_ALL); // zu testzwecken einschalten
+	//error_reporting(E_ALL); // zu testzwecken einschalten
 	ob_start("ob_gzhandler");
 
+	header("Content-Type: text/html;charset=UTF-8");
+	
 	include("sessionhelpers.inc.php");
 	$_GET = injsafe($_GET);
 	$_POST = injsafe($_POST);
@@ -30,6 +32,7 @@
 		} else {
 			$_SESSION['is_auth'] = 0;
 			$_SESSION['userid'] = -1;
+			header('Location: .');
 			die("Ihre Anmeldedaten waren nicht korrekt!<br/><a href='./' target='_self'>Zum Login</a>");
 		}
 	}
@@ -80,6 +83,8 @@
 		$Benutzer['spy'] = mysql_result($SQL_Result, 0, 'spy');
 		$Benutzer['help'] = mysql_result($SQL_Result, 0, 'help');
 		$Benutzer['tcausw'] = mysql_result($SQL_Result, 0, 'tcausw');
+		$Benutzer['scananfragen'] = mysql_result($SQL_Result, 0, 'scananfragen');
+		$Benutzer['offfleets'] = mysql_result($SQL_Result, 0, 'off_fleets');
 
 // Erweiterung von Bytehoppers vom 20.07.05 für Attplaner2
 		@$Benutzer['attplaner'] = mysql_result($SQL_Result, 0, 'attplaner');
@@ -144,6 +149,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de" lang="de" dir="ltr">
 	<head>
 		<title>TIC wird gewartet</title>
+		<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
 	</head>
 	<body style="background-color:#000000">
 		<table height="100%" width="100%">
@@ -179,10 +185,6 @@
 		tic_mysql_query("UPDATE `gn4flottenbewegungen` SET save='1' WHERE verteidiger_galaxie='".$_GET['needno_galaxie']."' AND verteidiger_planet='".$_GET['needno_planet']."'") or die(tic_mysql_error(__FILE__,__LINE__));
 	}
 
-	if (isset($irc_log)) {
-		if ($irc_log)
-			include('irc-scans.inc.php');
-	}
 	// Funktion einbinden
 	if ($action != "")
 		include("./function.".$action.".php");
@@ -192,7 +194,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de" lang="de" dir="ltr">
 	<head>
 		<title>TIC - <?=$MetaInfo['name']?></title>
-		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+		<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
 		<meta http-equiv="refresh" content="900; URL=./main.php?<?=(isset($_GET['auto']) ? "" : "auto").($_SERVER['QUERY_STRING'] != "" ? (isset($_GET['auto']) ? "" : "&amp;").str_replace("&", "&amp;", $_SERVER['QUERY_STRING']) : "")?>" />
 		<link rel="stylesheet" href="./tic.css" type="text/css" />
 		<script language="javascript" type="text/javascript">
@@ -210,6 +212,18 @@
 		<script type="text/javascript" src="./overlib/overlib.js"><!-- overLIB (c) Erik Bosrup --></script>
 	</head>
 	<body>
+<script src="https://cdn.rawgit.com/zenorocha/clipboard.js/v1.5.10/dist/clipboard.min.js"></script>
+<script>
+	var clipboard = new Clipboard('.btn');
+	clipboard.on('success', function(e) {
+		e.clearSelection();
+	});
+
+	clipboard.on('error', function(e) {
+		console.error('Action:', e.action);
+		console.error('Trigger:', e.trigger);
+	});
+</script>	
 		<div id="overDiv" style="position:absolute; visibility:hidden; z-index:1000;"></div>
 		<div style="position:absolute; z-index:10;width:100%">
 		<!-- <div align="center" style="width:100%"><img src="bilder/skin/banner.jpg" alt="" align="middle" /></div> --> <!-- Banner -->
@@ -267,16 +281,5 @@
 			</tr></table>
 //-->
 		</div></div></div></div>
-<?
-	if ($_REQUEST['autoclose'] == "now") {
-?>
-	<script language="javascript" type="text/javascript">
-	<!--
-	window.close();
-	-->
-	</script>
-<?
-	}
-?>
 	</body>
 </html>
