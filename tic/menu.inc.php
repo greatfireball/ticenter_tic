@@ -77,6 +77,7 @@
 									)
 									)
 									AND s.spieler_name IS NOT NULL
+									AND r.deleted = 0
 								) tmp";
 						$num += mysql_result(tic_mysql_query($sql, __FILE__, __LINE__), 0, 0);
 					}
@@ -100,6 +101,7 @@
 										 WHERE rg = r.ziel_g AND rp = r.ziel_p AND `type` = r.scantyp AND t > r.t - 15 * 60
 									)
 									AND s.spieler_name IS NOT NULL
+									AND r.deleted = 0
 								) tmp";
 						$num += mysql_result(tic_mysql_query($sql, __FILE__, __LINE__), 0, 0);
 					}
@@ -160,6 +162,9 @@
 			</tr>
 			<tr>
 				<td class="menu"><a href="help/help.html" target="tic-hilfe"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Hilfe</a></td>
+			</tr>
+			<tr>
+				<td class="menu"><a href="./main.php"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />News</a></td>
 			</tr>
 		</table>
 	</td></tr>
@@ -228,6 +233,9 @@
 			</tr>
 			<tr>
 				<td class="menu"><a href="./main.php?modul=logout"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Logout</a></td>
+			</tr>
+			<tr>
+				<td class="menu"><a href="http://home.in.tum.de/~steilm/forschungsplan.htm" target="_blank"><img src="bilder/skin/menu_item_icon.bmp" alt="" style="padding:0px 5px 0px 5px;" />Bauplan</a></td>
 			</tr>
 		</table>
 	</td></tr>
