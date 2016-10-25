@@ -308,7 +308,7 @@ CREATE TABLE `gn4channels` (
   `inviterang` tinyint(4) NOT NULL default '0',
   `opcontrol` tinyint(4) NOT NULL default '1',
   PRIMARY KEY  (`id`)
-) ;"
+) ;";
 
 $sqlquery['gn4galfleetupdated'] = "DROP TABLE IF EXISTS `gn4galfleetupdated`;
 CREATE TABLE `gn4galfleetupdated` (
