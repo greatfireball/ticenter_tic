@@ -227,6 +227,8 @@ CREATE TABLE `gn4scans` (
   `gsr` bigint(20) NOT NULL default '0',
   `ga` bigint(20) NOT NULL default '0',
   `gr` bigint(20) NOT NULL default '0',
+  `erfasser_svs` int(11) DEFAULT NULL,
+  `erfasser` varchar(255) DEFAULT NULL,
   PRIMARY KEY  (`id`),
   INDEX	scan_koords (`rg`, `rp`)
 ) ;";
