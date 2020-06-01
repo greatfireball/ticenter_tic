@@ -960,4 +960,14 @@ CREATE TABLE `gn_spieler2` (
 
 $sqlquery['gn4gnuser'] = "DROP TABLE IF EXISTS `gn4gnuser`; DROP VIEW IF EXISTS `gn4gnuser`; CREATE VIEW `gn4gnuser` AS select `s`.`t` AS `erfasst`,`s`.`spieler_galaxie` AS `gala`,`s`.`spieler_planet` AS `planet`,'' AS `kommentar`,'' AS `ticid`,`s`.`spieler_name` AS `name`,0 AS `id` from `gn_spieler2` `s`;";
 
+$sqlquery['gn4incplanets'] = "DROP TABLE IF EXISTS `gn4incplanets`;
+CREATE TABLE `gn4incplanets` (
+  `ticid` varchar(5) NOT NULL default '',
+  `planet` smallint(6) NOT NULL default '0',
+  `gala` smallint(6) NOT NULL default '0',
+  `bestaetigt` varchar(200) NOT NULL default '',
+  `vorgemerkt` varchar(200) NOT NULL default '',
+  `frei` tinyint(4) NOT NULL default '1'
+) ;";
+
 ?>
