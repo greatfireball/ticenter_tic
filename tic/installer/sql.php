@@ -958,6 +958,6 @@ CREATE TABLE `gn_spieler2` (
   UNIQUE KEY `galplani` (`spieler_galaxie`,`spieler_planet`)
 );";
 
-$sqlquery['gn4gnuser'] = "CREATE VIEW `gn4gnuser` AS select `s`.`t` AS `erfasst`,`s`.`spieler_galaxie` AS `gala`,`s`.`spieler_planet` AS `planet`,'' AS `kommentar`,'' AS `ticid`,`s`.`spieler_name` AS `name`,0 AS `id` from `gn_spieler2` `s`;";
+$sqlquery['gn4gnuser'] = "DROP TABLE IF EXISTS `gn4gnuser`; DROP VIEW IF EXISTS `gn4gnuser`; CREATE VIEW `gn4gnuser` AS select `s`.`t` AS `erfasst`,`s`.`spieler_galaxie` AS `gala`,`s`.`spieler_planet` AS `planet`,'' AS `kommentar`,'' AS `ticid`,`s`.`spieler_name` AS `name`,0 AS `id` from `gn_spieler2` `s`;";
 
 ?>
