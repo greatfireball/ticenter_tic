@@ -85,7 +85,8 @@
 						"gn4allianzen",
 						"gn4cron",
 						"gn4flottenbewegungen",
-						"gn4forum",
+                        "gn4forum",
+                        "gn_spieler2",
 						"gn4gnuser",
 						"gn4incplanets",
 						"gn4log",
@@ -97,14 +98,14 @@
 						"gn4attplanung",
 						"gn4vars",
 						"gn4channels",
-
 						"gn4galfleetupdated",
 						"gn4scanblock",
 						"gn4scans_history",
-						"trigger_scan_hist_i",
+						/* "trigger_scan_hist_i",
 						"trigger_scan_hist_u",
 						"trigger_scan_svs_i",
-						"trigger_scan_svs_u");
+                        "trigger_scan_svs_u" */
+                    );
 
         $mysql->query("SHOW TABLE STATUS") or die($mysql->error(__FILE__,__LINE__));
 
@@ -195,7 +196,7 @@
         \$db_info['user'] = '".$t['username']."';
         \$db_info['password'] = '".$t['password']."';
         \$db_info['dbname'] = '".$t['database']."';
-        \$pfadzumtick = '".$_SESSION['install']['tic_adress']."'; // Der Schrägstrich am Ende ist wichtig!
+        \$pfadzumtick = '".$_SESSION['install']['tic_adress']."'; // Der Schrï¿½gstrich am Ende ist wichtig!
 
         \$tic_status = array('".implode("', '", $GLOBALS['status'])."');
         \$tic_version = array(".implode(", ",$GLOBALS ['version']).");
@@ -210,12 +211,14 @@
         if(isset($_SESSION['install']['tables']))
         {
             include("sql.php");
-            foreach($_SESSION['install']['tables'] as $table)
+            //foreach($_SESSION['install']['tables'] as $table)
+            foreach(array_keys($sqlquery) as $table)
             {
+                echo "<b>",$table, "</b><pre>",$sqlquery[$table],"</pre>";
                 $mysql->multiquery($sqlquery[$table]) or die($mysql->error(__FILE__,__LINE__));
             }
         }
-        $mysql->insert("gn4meta", "name, sysmsg", "'".$_POST['meta_name']."', 'Wenn dieser Text zu lesen ist dann ist leuft der TIC diese Nachricht kann unter Managment geändert werden.'") or die($mysql->error(__FILE__,__LINE__));
+        $mysql->insert("gn4meta", "name, sysmsg", "'".$_POST['meta_name']."', 'Wenn dieser Text zu lesen ist dann ist leuft der TIC diese Nachricht kann unter Managment geï¿½ndert werden.'") or die($mysql->error(__FILE__,__LINE__));
         $ticid = $mysql->insert_id();
 
 
