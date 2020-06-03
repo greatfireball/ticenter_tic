@@ -25,6 +25,10 @@
         var $connected;
         var $result;
         var $use;
+        var $dbname;
+        var $dbpw;
+        var $dbuser;
+        var $dbhost;
 
         function mysql($args)
         {
@@ -35,9 +39,13 @@
             $this->use = "0";
 
             if(count($args) == 4)
-                return $this->connect($args['host'],$args['user'],$args['password'],$args['dbname']);
-            else
             {
+                $this->dbname = $args['dbname'];
+                $this->dbuser = $args['user'];
+                $this->dbhost = $args['host'];
+                $this->dbpw   = $args['password'];
+                return $this->connect($args['host'],$args['user'],$args['password'],$args['dbname']);
+            } else {
                 if(count($args))
                     die("Fatalerror: mysql::mysql invalid argument count");
 
@@ -66,7 +74,7 @@
             $this->querys++;
             if (!mysql_select_db($dbname,$this->link))
             {
-                 $this->errortext = "Datenbank $dbname konnte nicht ausgeählt werden: ".mysql_error();
+                 $this->errortext = "Datenbank $dbname konnte nicht ausgeï¿½hlt werden: ".mysql_error();
                  return false;
             }
             return true;        
@@ -125,7 +133,7 @@
             if($this->errortext != "" )
                 return "<b>Mysql Fehler:</b> ".$this->errortext.($file != "" && $line != "" ? " in ".$file."(".$line.")" : "");
             else
-                return "<b>Mysql Fehler:</b> ".mysql_error()." in ".$file."(".$line.")";  ;
+                return "<b>Mysql Fehler:</b> ".mysql_error()." in ".$file."(".$line.")";
         }
 
         function numQuerys()
