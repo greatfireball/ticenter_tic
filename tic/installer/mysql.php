@@ -68,7 +68,7 @@
             $this->connected = 1;
             return true;
         }
-        
+
         function select_db($dbname)
         {
             $this->querys++;
@@ -77,7 +77,7 @@
                  $this->errortext = "Datenbank $dbname konnte nicht ausge�hlt werden: ".mysql_error();
                  return false;
             }
-            return true;        
+            return true;
         }
 
         function disconnect()
@@ -185,19 +185,19 @@
 
         function multiquery($string)
         {
-			/*TODO
-			    - Semikolon innerhalb von Strings nicht beachten
-			*/
-            $querys = explode(";", $string);
-            foreach($querys as $query)
-            {
-				if($query != "")
-				    if(!$this->query($query,0))
-                        return false;
+            $mysqli = new mysqli($this->dbhost,$this->dbuser,$this->dbpw,$this->dbname);
+
+            if (mysqli_connect_errno()) {
+                printf("Connect failed: %s\n", mysqli_connect_error());
+                exit();
             }
+
+            $mysqli->multi_query(implode(" ", $string));
+            $mysqli->close();
+
             return true;
         }
-        
+
         function fromfile($filename)
         {
             $file = fopen($filename, "r");
